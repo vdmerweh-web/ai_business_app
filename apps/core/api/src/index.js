@@ -12,9 +12,11 @@ import {featuresFor, requireFeature} from './clients.js';
 import {bobbyRoutes, apiKeySet} from './bobby.js';
 import {isAppAdmin, agentsPublic, CLIENT_MENU_IDS} from './staffcfg.js';
 import {promptLogInit, usageRoutes} from './promptLog.js';
+import {xaiBalanceInit} from './xaiBalance.js';
 
 seedTenants();
 promptLogInit();
+xaiBalanceInit();
 
 const app = express();
 app.set('trust proxy', 1);

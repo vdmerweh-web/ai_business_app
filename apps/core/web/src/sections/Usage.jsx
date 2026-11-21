@@ -40,11 +40,43 @@ export default function Usage() {
         <>
           <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Prompts" value={sum.totals?.prompts || 0} hint="How many times a helper was asked, including errors."/>
-            <Stat label="Credits used" value={r(sum.totals?.credits)} hint="Rand of Grok credits used in this date range."/>
+            <Stat label="Credits used" value={r(sum.totals?.credits)} hint="Rand of Grok credits used in this date range, from our own prompt log."/>
+            <Stat label="Grok balance left" value={balanceLabel(sum.xaiBalance)} hint="Prepaid credit still left on the xAI (Grok) account, from the latest twice-daily check at 07:00 and 19:00 South African time (SAST). Shown in US dollars and Rand."/>
             <Stat label="Average time" value={ms(sum.totals?.avg_ms)} hint="Average wall time from start to finish for each prompt."/>
             <Stat label="Average load" value={Number(sum.totals?.avg_load || 0).toFixed(2)} hint="Average server load (load average) at prompt time. Lower is quieter."/>
           </ul>
           {sum.totals?.errors > 0 && <p className="mt-2 text-sm text-red-800">{sum.totals.errors} prompt(s) ended with an error.</p>}
+          <section className="mt-8">
+            <h2 className="text-xl font-semibold">Grok prepaid balance
+              <Hint term="Grok prepaid balance" meaning="This is the credit still left on the xAI (Grok) account. It is checked on this server twice a day, at 07:00 and 19:00 South African time (SAST)."/>
+            </h2>
+            <p className="text-slate-600 mt-1 max-w-2xl">The latest reading sits next to credits used above. Credits used come from our prompt log. The balance comes from xAI. The management key is only used on the live servers.</p>
+            {sum.xaiBalance?.latest?.status === 'key_needed' && (
+              <p className="mt-2 text-sm text-slate-600">The management key is not set yet. Checks are stored as “key needed” until it is added. No call is made to xAI until then.</p>
+            )}
+            {sum.xaiBalance?.latest?.status === 'error' && (
+              <p className="mt-2 text-sm text-red-800">{sum.xaiBalance.latest.error_message || 'The last balance check failed.'}</p>
+            )}
+            <div className="mt-3 overflow-x-auto rounded-2xl bg-white ring-1 ring-slate-200">
+              <table className="min-w-full text-sm">
+                <thead><tr className="text-left bg-slate-50 border-b border-slate-200">
+                  {['When','Balance (USD)','Balance (Rand)','Status','Server'].map(h => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {(sum.xaiBalance?.history || []).map(row => (
+                    <tr key={row.id} className="border-t border-slate-200">
+                      <td className="px-3 py-2 whitespace-nowrap">{when(row.checked_at)}</td>
+                      <td className="px-3 py-2">{row.balance_usd == null ? '—' : `US$ ${Number(row.balance_usd).toFixed(2)}`}</td>
+                      <td className="px-3 py-2">{row.balance_zar == null ? '—' : r(row.balance_zar)}</td>
+                      <td className="px-3 py-2">{row.status === 'key_needed' ? 'key needed' : row.status}{row.error_message && row.status !== 'key_needed' ? ` · ${row.error_message}` : ''}</td>
+                      <td className="px-3 py-2">{row.server_name || '—'}</td>
+                    </tr>
+                  ))}
+                  {!(sum.xaiBalance?.history || []).length && <tr><td colSpan={5} className="px-3 py-4 text-slate-600 text-center">No balance checks yet. The first one runs shortly after the API starts, then at 07:00 and 19:00 SAST.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
           <Table title="Per company" rows={sum.byClient} name={x => x.name + (x.ref ? ` (${x.ref})` : '')}/>
           <Table title="Per person" rows={sum.byUser} name={x => x.email}/>
           <Table title="Per helper" rows={sum.byAgent} name={x => x.agent}/>
@@ -86,6 +118,16 @@ export default function Usage() {
       </div>
     </div>
   );
+}
+
+function balanceLabel(bal) {
+  const latest = bal?.latest;
+  if (!latest) return 'No check yet';
+  if (latest.status === 'key_needed') return 'Key needed';
+  if (latest.status === 'error') return 'Check failed';
+  if (latest.balance_usd == null) return '—';
+  const usd = `US$ ${Number(latest.balance_usd).toFixed(2)}`;
+  return latest.balance_zar == null ? usd : `${usd} / ${r(latest.balance_zar)}`;
 }
 
 function Stat({label, value, hint}) {

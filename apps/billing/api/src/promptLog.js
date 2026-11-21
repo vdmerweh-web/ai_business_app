@@ -4,6 +4,7 @@
 import os from 'os';
 import {q} from './db.js';
 import {isAppAdmin} from './staffcfg.js';
+import {xaiBalanceSummary} from './xaiBalance.js';
 
 export function monthKey(d = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit'}).formatToParts(d);
@@ -229,7 +230,8 @@ export function usageRoutes(r, {W}) {
       order by 1
     `, p);
     const [totals] = await q(`select ${agg}, min(server_name) as server_name from ai_prompt_log where ${where}`, p);
-    res.json({from, to, serverName: serverName(), totals, byClient, byUser, byAgent, byDay});
+    const xaiBalance = await xaiBalanceSummary();
+    res.json({from, to, serverName: serverName(), totals, byClient, byUser, byAgent, byDay, xaiBalance});
   }));
   r.get('/usage/recent', admin, W(async (req, res) => {
     const limit = Math.min(200, Math.max(1, +req.query.limit || 50));

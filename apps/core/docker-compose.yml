@@ -12,6 +12,8 @@ services:
       INVENTORY_FILE: /report/index.html
       BACKUP_DIR: /backups
       SERVER_NAME: "${SERVER_NAME:-app.codegreene.com}"
+      XAI_MANAGEMENT_KEY: "${XAI_MANAGEMENT_KEY:-}"
+      XAI_TEAM_ID: "${XAI_TEAM_ID:-43eb7c23-1ec6-46f2-8596-5e8aa3b2ae5c}"
     volumes:
       - data:/data
       # Same source as the old PHP page (/bot_admin): the Admin bot's report, mounted read-only.

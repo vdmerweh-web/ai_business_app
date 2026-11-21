@@ -31,6 +31,8 @@ services:
       XAI_API_KEY: "${XAI_API_KEY:-}"
       XAI_MODEL: "${XAI_MODEL:-grok-4.3}"
       XAI_ZAR_PER_USD: "${XAI_ZAR_PER_USD:-17.50}"
+      XAI_MANAGEMENT_KEY: "${XAI_MANAGEMENT_KEY:-}"
+      XAI_TEAM_ID: "${XAI_TEAM_ID:-43eb7c23-1ec6-46f2-8596-5e8aa3b2ae5c}"
       ADMIN_EMAILS: "${ADMIN_EMAILS:-}"
       ADMIN_AGENTS: "${ADMIN_AGENTS:-}"
       MAIN_CLIENT_REF: "${MAIN_CLIENT_REF:-}"
