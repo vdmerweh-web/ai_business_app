@@ -1,0 +1,16 @@
+{
+  "name": "Planet Grid",
+  "short_name": "Planet Grid",
+  "description": "Your Planet Grid app: chat, customers, invoices and more.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#06122A",
+  "theme_color": "#06122A",
+  "icons": [
+    {"src": "/favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

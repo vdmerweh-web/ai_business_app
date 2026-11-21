@@ -1,0 +1,12 @@
+# Secrets and machine-local data. Never commit these.
+.env
+backups/
+secrets/
+TEST_LOGIN.txt
+*.db
+*.db-wal
+*.db-shm
+node_modules/
+web/dist/
+.DS_Store
+.demo-pass

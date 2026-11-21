@@ -1,0 +1,16 @@
+import React,{useState,useEffect} from 'react';import SendInvoice from './SendInvoice.jsx';import {Search,FileText} from 'lucide-react';
+import {useData} from '../store.js';import {api,fmtDate,invStatus} from '../lib.js';import {Card,Table,Badge,Money,Input,PageHead,SkelRows,ErrorBox,Empty,PdfSheet,Button} from '../ui.jsx';import {go,useCan} from '../store.js';
+export default function Invoices(){const{byId}=useData();const[l,setL]=useState(null);const[err,setErr]=useState('');const[f,setF]=useState('');const[s,setS]=useState('all');const[pdf,setPdf]=useState(null);const can=useCan();
+ const load=()=>{setErr('');api('/invoices').then(setL).catch(e=>setErr(e.message))};useEffect(load,[]);
+ const rows=(l||[]).map(i=>({...i,st:invStatus(i,byId?.[i.client_id]?.an.invOpen[i.number]?.open)})).filter(i=>(s==='all'||i.st[0]===s)&&(i.name+i.number+i.ref).toLowerCase().includes(f.toLowerCase()));
+ const cnt=k=>(l||[]).filter(i=>invStatus(i,byId?.[i.client_id]?.an.invOpen[i.number]?.open)[0]===k).length;
+ return <><PageHead title="Invoices" sub="Every invoice, old system and app. Tap one to view it.">{can('run','read')&&<Button v="secondary" onClick={()=>go('run')}>New month's invoices → Monthly run</Button>}</PageHead>
+  <Card><div className="flex flex-wrap gap-3 p-4 border-b border-line"><div className="relative flex-1 min-w-[200px]"><Search size={16} className="absolute left-3 top-3 text-muted"/><Input className="pl-9" placeholder="Search client or number" value={f} onChange={e=>setF(e.target.value)}/></div>
+   <div className="flex flex-wrap gap-1.5">{[['all','All'],['due','Due'],['over','Overdue'],['paid','Paid']].map(([k,t])=><button key={k} onClick={()=>setS(k)} className={'px-3 h-9 rounded-full text-[13px] border cursor-pointer transition-colors '+(s===k?'bg-navy text-white border-navy':'border-line text-muted hover:bg-slate-50')}>{t}{k!=='all'&&l&&<span className="ml-1.5 opacity-70">{cnt(k)}</span>}</button>)}</div></div>
+  {err?<div className="p-4"><ErrorBox msg={err} retry={load}/></div>:!l?<SkelRows n={10}/>:
+  <Table rows={rows} rowKey={i=>i.number} onRow={i=>setPdf({no:i.number,title:`Invoice ${i.number} · ${i.name}`,desc:fmtDate(i.inv_date),url:`/api/pdf/invoice/${i.number}`})} empty={<Empty icon={FileText} title="No invoices match" text="Try another filter."/>} cols={[
+   {h:'No',r:i=><span className="font-medium">{i.number}</span>},{h:'Date',r:i=><span className="whitespace-nowrap">{fmtDate(i.inv_date)}</span>},{h:'Client',r:i=>i.name},
+   {h:'Status',r:i=><Badge k={i.st[0]}>{i.st[1]}</Badge>},{h:'From',hide:1,r:i=><span className="text-muted">{i.final?'App':'Old system'}</span>},{h:'Total',right:1,r:i=><Money v={i.total}/>},
+   {h:'',hide:1,r:i=><a onClick={e=>e.stopPropagation()} className="text-grid text-[13px] whitespace-nowrap mr-3" target="_blank" rel="noreferrer" aria-label={`Invoice ${i.number} PDF`} href={`/api/pdf/invoice/${i.number}`}>Invoice PDF</a>},
+   {h:'',hide:1,r:i=><a onClick={e=>e.stopPropagation()} className="text-grid text-[13px] whitespace-nowrap" target="_blank" rel="noreferrer" href={`/api/pdf/statement?client=${i.client_id}&month=${i.inv_date.slice(0,7)}`}>Statement</a>}]}/>}</Card>
+  <PdfSheet pdf={pdf} onClose={()=>setPdf(null)} extra={pdf?.no&&can('invoices','edit')&&<SendInvoice no={pdf.no}/>}/></>}

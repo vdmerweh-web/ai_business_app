@@ -1,0 +1,40 @@
+# Codegreene main app (app.codegreene.com). Two containers, SQLite on a volume, both bound to 127.0.0.1 only.
+name: codegreene-app
+services:
+  api:
+    build: {context: ./api}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "3600"
+      DB_FILE: /data/app.db
+      UPLOAD_DIR: /data/uploads
+      INVENTORY_FILE: /report/index.html
+      BACKUP_DIR: /backups
+    volumes:
+      - data:/data
+      # Same source as the old PHP page (/bot_admin): the Admin bot's report, mounted read-only.
+      - ${INVENTORY_DIR:-/var/lib/bot_admin}:/report:ro
+      - ./backups:/backups
+    group_add: ["${INVENTORY_GID:-33}"]   # www-data can read /var/lib/bot_admin (root:www-data 0640)
+    mem_limit: 160m
+    memswap_limit: 160m
+    cpus: 0.5
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    ports: ["127.0.0.1:3600:3600"]
+    logging: {driver: json-file, options: {max-size: "5m", max-file: "3"}}
+  web:
+    build: {context: ./web}
+    restart: unless-stopped
+    depends_on: [api]
+    mem_limit: 48m
+    memswap_limit: 48m
+    cpus: 0.25
+    security_opt: ["no-new-privileges:true"]
+    ports: ["127.0.0.1:3601:80"]
+    logging: {driver: json-file, options: {max-size: "5m", max-file: "3"}}
+volumes: {data: {}}

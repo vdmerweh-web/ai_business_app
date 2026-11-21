@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sunrise Bakery · Johannesburg</title>
+<meta name="description" content="Fresh bread and pastries baked every morning in Johannesburg. A first draft site built for Sunrise Bakery.">
+<meta name="theme-color" content="#7c2d12">
+<style>
+  :root { --ink:#1c1917; --paper:#fff7ed; --brick:#7c2d12; --gold:#b45309; --cream:#ffedd5; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+  body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: var(--ink); background: var(--paper); line-height: 1.6; }
+  :focus-visible { outline: 3px solid #d97706; outline-offset: 3px; }
+  .skip { position: absolute; left: 1rem; top: -5rem; background: var(--brick); color: #fff; padding: .6rem 1rem; border-radius: .5rem; }
+  .skip:focus { top: 1rem; z-index: 20; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 6vw; background: #fff; border-bottom: 1px solid #fed7aa; }
+  .logo { font-weight: 700; font-size: 1.4rem; color: var(--brick); text-decoration: none; }
+  nav ul { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; list-style: none; margin: 0; padding: 0; }
+  nav a { color: var(--ink); text-decoration: none; }
+  nav a:hover, nav a:focus { text-decoration: underline; }
+  .hero { padding: 4.5rem 6vw 4rem; background: linear-gradient(160deg, #ffedd5 0%, #fff7ed 55%, #ffedd5 100%); }
+  .hero p.kicker { letter-spacing: .16em; text-transform: uppercase; font-size: .75rem; font-family: system-ui, sans-serif; color: var(--gold); margin: 0 0 .8rem; }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.15; margin: 0 0 1rem; max-width: 16ch; }
+  .hero .lead { font-size: 1.25rem; max-width: 36rem; }
+  .btn { display: inline-block; margin-top: 1.4rem; background: var(--brick); color: #fff; text-decoration: none; padding: .85rem 1.3rem; border-radius: 999px; font-family: system-ui, sans-serif; font-weight: 600; }
+  .btn:hover { background: #9a3412; }
+  .note { margin-top: 2rem; font-family: system-ui, sans-serif; font-size: .9rem; color: #57534e; max-width: 36rem; background: #fff; border-left: 4px solid var(--gold); padding: .8rem 1rem; }
+  section { padding: 3.5rem 6vw; }
+  h2 { font-size: 2rem; margin: 0 0 1.2rem; }
+  .grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  article { background: #fff; border-radius: 1rem; padding: 1.3rem 1.4rem; box-shadow: 0 1px 0 #fed7aa; }
+  article h3 { margin: 0 0 .4rem; color: var(--brick); }
+  footer { padding: 2rem 6vw; font-family: system-ui, sans-serif; font-size: .9rem; color: #fff; background: var(--brick); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+  <a class="logo" href="#top">Sunrise Bakery</a>
+  <nav aria-label="Page">
+    <ul>
+      <li><a href="#about">About</a></li>
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#visit">Visit</a></li>
+    </ul>
+  </nav>
+</header>
+<main id="main">
+  <section class="hero" id="top">
+    <p class="kicker">Johannesburg</p>
+    <h1>Bread worth getting up early for.</h1>
+    <p class="lead">We bake through the night so you can walk in to warm loaves, flaky pastries and coffee that is actually good.</p>
+    <a class="btn" href="#visit">Come and see us</a>
+    <p class="note">This is a first draft of your site, built for you before we even spoke. Look around, then tell your helper in the app what you would like to change, and send a logo or photos when you have them.</p>
+  </section>
+  <section id="about">
+    <h2>About us</h2>
+    <p>Sunrise Bakery is a neighbourhood bakery. We use simple ingredients, long rises, and a lot of care. This page is a starting point — your real story, hours and pictures will go here.</p>
+  </section>
+  <section id="menu">
+    <h2>A taste of the menu</h2>
+    <div class="grid">
+      <article>
+        <h3>Sourdough loaf</h3>
+        <p>Crust you can hear, a soft inside, baked every morning.</p>
+      </article>
+      <article>
+        <h3>Butter croissant</h3>
+        <p>Layers, flake, and a little extra butter because that is the point.</p>
+      </article>
+      <article>
+        <h3>Cinnamon bun</h3>
+        <p>Soft dough, warm spice, icing if you want it.</p>
+      </article>
+    </div>
+  </section>
+  <section id="visit">
+    <h2>Visit</h2>
+    <p>Johannesburg. Exact street, hours and a map will be added once you send them. For now this page is here so you can see the shape of your site.</p>
+    <p>Want to get in touch? A contact form will go here and will later land in your CRM (Customer Relationship Management: the list of people who write to you).</p>
+  </section>
+</main>
+<footer>
+  <p>Sunrise Bakery · A first draft site · Built by Planet Grid</p>
+</footer>
+</body>
+</html>

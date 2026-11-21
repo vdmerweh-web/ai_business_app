@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment: {POSTGRES_USER: billing, POSTGRES_PASSWORD: "${DB_PASSWORD}", POSTGRES_DB: billing}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD","pg_isready","-U","billing"], interval: 5s, retries: 10}
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgres://billing:${DB_PASSWORD}@db:5432/billing"
+      ADMIN_PASSWORD_HASH_B64: "${ADMIN_PASSWORD_HASH_B64}"
+      ADMIN_EMAIL: hannes@planet-grid.com
+      APP_URL: https://app.planet-grid.com
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-}"
+      GRID_WEBHOOK_URL: "${GRID_WEBHOOK_URL:-}"
+      GRID_WEBHOOK_SECRET: "${GRID_WEBHOOK_SECRET:-}"
+      GRID_WEBHOOK_AUTH: "${GRID_WEBHOOK_AUTH:-}"
+      GRID_BOT_TOKEN: "${GRID_BOT_TOKEN:-}"
+      SMTP_HOST: "${SMTP_HOST:-mail.planet-grid.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER:-hannes@planet-grid.com}"
+      SMTP_PASS: "${SMTP_PASS:-}"
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
+      VAPID_SUBJECT: "mailto:hannes@planet-grid.com"
+      MAIL_FROM: "${MAIL_FROM:-Hannes - Planet Grid <hannes@planet-grid.com>}"
+    depends_on: {db: {condition: service_healthy}}
+    ports: ["127.0.0.1:3000:3000"]
+  web:
+    build: ./web
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["127.0.0.1:3001:80"]
+volumes: {pgdata: {}}

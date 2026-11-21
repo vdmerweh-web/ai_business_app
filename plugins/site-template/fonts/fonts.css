@@ -1,0 +1,4 @@
+/* Default: system fonts. Replace by running tools/pull-fonts.sh <domain> <site-folder> after choosing fonts in the app (Blog > Fonts). */
+:root{--pg-font-heading:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--pg-font-body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--pg-heading-weight:700;--pg-body-weight:400}
+body{font-family:var(--pg-font-body);font-weight:var(--pg-body-weight)}
+h1,h2,h3,h4,h5,h6{font-family:var(--pg-font-heading);font-weight:var(--pg-heading-weight)}

@@ -1,0 +1,56 @@
+# Secrets and machine-local config. Never commit these.
+.env
+.env.*
+!.env.example
+!**/.env.example
+secrets/
+*.pem
+*.key
+id_rsa
+id_ed25519
+*_ed25519
+*.p12
+*.pfx
+
+# Passwords, login leftovers, local demo files
+.demo-pass
+TEST_LOGIN.txt
+*.bak
+*.bak-*
+
+# Databases, dumps, backups, uploads, client content
+backups/
+uploads/
+billing_uploads/
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.pdf
+
+# Seed files can hold real client names, emails, phones and balances
+**/seed.json
+
+# Dependencies and build output
+node_modules/
+dist/
+**/web/dist/
+coverage/
+
+# Logs and OS/editor junk
+logs/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Docker volume leftovers
+pgdata/
