@@ -1,12 +1,26 @@
 import React, {useEffect, useState} from 'react';
-import {LogOut, Server, Loader2, Bot, Globe, Images, Contact, MessagesSquare, Menu, X} from 'lucide-react';
+import {LogOut, Server, Loader2, Bot, Globe, Images, Contact, MessagesSquare, Menu, X, BarChart3} from 'lucide-react';
 import {api, post, useRoute} from './lib.js';
 import Login from './Login.jsx';
 import ServerAdmin from './sections/ServerAdmin.jsx';
 import Bobby from './sections/Bobby.jsx';
 import ComingSoon from './sections/ComingSoon.jsx';
+import AgentChat from './sections/AgentChat.jsx';
+import Usage from './sections/Usage.jsx';
+import Chat from './Chat.jsx';
 
-const ICONS = {bobby: Bot, web: Globe, resources: Images, crm: Contact, scott: MessagesSquare, 'server-admin': Server};
+const ICONS = {bobby: Bot, web: Globe, resources: Images, crm: Contact, scott: MessagesSquare, 'server-admin': Server, grid: Bot, admin: Server, usage: BarChart3};
+function PageFor(section) {
+  if (!section) return null;
+  if (section.id === 'bobby') return Bobby;
+  if (section.id === 'server-admin') return ServerAdmin;
+  if (section.id === 'usage') return Usage;
+  if (section.id === 'admin' && section.connected) return function AdminChat() { return <Chat section="server-admin" bot="Admin"/> };
+  if (section.id === 'grid' && section.connected) return function GridChat() { return <Chat section="grid" bot="Grid"/> };
+  if (section.id === 'scott' && section.connected) return function ScottChat() { return <Chat section="scott" bot="Scott"/> };
+  if (section.id === 'grid' || section.id === 'admin' || (section.id === 'scott' && section.agent)) return AgentChat;
+  return ComingSoon;
+}
 const PAGES = {
   'bobby': {Page: Bobby},
   'web': {Page: ComingSoon},
@@ -14,6 +28,9 @@ const PAGES = {
   'crm': {Page: ComingSoon},
   'scott': {Page: ComingSoon},
   'server-admin': {Page: ServerAdmin},
+  'usage': {Page: Usage},
+  'grid': {Page: AgentChat},
+  'admin': {Page: AgentChat},
 };
 
 export default function App() {
@@ -37,7 +54,7 @@ export default function App() {
   }, [menuOpen]);
 
   const cur = sections.find(s => path === '/' + s.id || path.startsWith('/' + s.id + '/')) || sections[0];
-  const P = cur && PAGES[cur.id];
+  const P = cur && {Page: PageFor(cur)};
   const agentName = me?.client?.agentName || 'Bobby';
   useTitle(cur ? `${cur.id === 'bobby' ? agentName : cur.name} · ${me?.client?.name || 'App'}` : 'App');
 

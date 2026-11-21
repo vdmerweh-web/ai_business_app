@@ -11,6 +11,7 @@ services:
       UPLOAD_DIR: /data/uploads
       INVENTORY_FILE: /report/index.html
       BACKUP_DIR: /backups
+      SERVER_NAME: "${SERVER_NAME:-app.codegreene.com}"
     volumes:
       - data:/data
       # Same source as the old PHP page (/bot_admin): the Admin bot's report, mounted read-only.

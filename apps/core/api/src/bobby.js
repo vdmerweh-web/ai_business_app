@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import {db, now} from './db.js';
 import {getClient, featuresFor, creditsFor, monthKey, clientPublic} from './clients.js';
+import {withPromptLog} from './promptLog.js';
 
 const DIR = process.env.UPLOAD_DIR || '/data/uploads';
 const MB = 1024 * 1024;
@@ -240,12 +241,14 @@ function historyForModel(convId, clientId, limit = 30) {
 }
 
 async function replyTo(client, user, conv, userText) {
+  return withPromptLog({agent: 'bobby', user, client, prompt: userText, conversationId: conv.id}, async ({markModel, setMeta}) => {
   const credits = creditsFor(client);
   if (credits.exhausted) {
     const text = `Our AI (Artificial Intelligence) credits for this month are used up. The plan includes R${credits.allowanceZar.toFixed(0)} a month. Please ask Planet Grid about a top-up if you need more.`;
     const row = db.prepare("insert into bobby_messages(conversation_id,client_id,role,content) values(?,?,'assistant',?) returning *")
       .get(conv.id, client.id, text);
     db.prepare("update bobby_conversations set last_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') where id=? and client_id=?").run(conv.id, client.id);
+    setMeta({response_length: text.length, cost_zar: 0});
     return row;
   }
   if (!apiKeySet()) {
@@ -253,6 +256,7 @@ async function replyTo(client, user, conv, userText) {
     const row = db.prepare("insert into bobby_messages(conversation_id,client_id,role,content) values(?,?,'assistant',?) returning *")
       .get(conv.id, client.id, text);
     db.prepare("update bobby_conversations set last_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') where id=? and client_id=?").run(conv.id, client.id);
+    setMeta({response_length: text.length, cost_zar: 0});
     return row;
   }
 
@@ -262,9 +266,10 @@ async function replyTo(client, user, conv, userText) {
   ];
 
   let lastZar = 0;
+  let inTok = 0, cachedTok = 0, outTok = 0, lastModel = null;
   let final = null;
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const {model, data} = await callXai(messages, TOOLS);
+    const {model, data} = await markModel(callXai(messages, TOOLS));
     const choice = data.choices?.[0]?.message;
     if (!choice) throw err('Bobby got an empty reply. Please try again.', 502);
     const usage = data.usage || {};
@@ -273,6 +278,8 @@ async function replyTo(client, user, conv, userText) {
 
     const saved = db.prepare("insert into bobby_messages(conversation_id,client_id,role,content,tool_calls,prompt_tokens,completion_tokens,cost_zar) values(?,?,'assistant',?,?,?,?,?) returning *")
       .get(conv.id, client.id, content, toolCalls.length ? JSON.stringify(toolCalls) : null, usage.prompt_tokens || 0, usage.completion_tokens || 0, 0);
+    const priced = priceOf(model, usage);
+    inTok += priced.input; cachedTok += priced.cached; outTok += priced.output; lastModel = model;
     lastZar += recordUsage(client, model, usage, conv.id, saved.id);
     db.prepare('update bobby_messages set cost_zar=? where id=? and client_id=?').run(lastZar, saved.id, client.id);
 
@@ -302,7 +309,9 @@ async function replyTo(client, user, conv, userText) {
   }
   db.prepare("update bobby_conversations set last_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'), title=case when title like 'Welcome from %' or title='New chat' then substr(?,1,60) else title end where id=? and client_id=?")
     .run(userText.trim().split('\n')[0].slice(0, 60) || 'Chat', conv.id, client.id);
+  setMeta({model: lastModel, input_tokens: inTok, cached_input_tokens: cachedTok, output_tokens: outTok, cost_zar: lastZar, response_length: (final?.content || '').length});
   return final;
+  });
 }
 
 const raw = express.raw({type: () => true, limit: MAX + 1024});

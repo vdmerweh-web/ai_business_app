@@ -1,7 +1,7 @@
 // Chat with Grid (the bot) + account file library.
 // Users have many conversations; attachments belong to their conversation and can be saved to the account library (tagged to a domain or product).
 // Bot side: webhook out (GRID_WEBHOOK_URL + X-Grid-Webhook-Secret), replies in via bearer GRID_BOT_TOKEN.
-import express from 'express';import crypto from 'crypto';import fs from 'fs';import path from 'path';import {q} from './db.js';import {scopeFor,fileInScope} from './scope.js';
+import express from 'express';import crypto from 'crypto';import fs from 'fs';import path from 'path';import {q} from './db.js';import {startPromptLog,finishPromptLog} from './promptLog.js';import {scopeFor,fileInScope} from './scope.js';
 const DIR=process.env.UPLOAD_DIR||'/data/uploads';const API=process.env.API_URL||'https://api.planet-grid.com';
 const MB=1024*1024;
 // ext -> [mime, max bytes, magic check]
@@ -90,7 +90,9 @@ export function botRoutes(r,{W}){
    if(m)att.push({id:m[1]});else if(/^https:\/\/[^\s"'<>]+$/.test(u))att.push({url:u});else throw err('imageUrls must be https URLs or file URLs');}
   if(!text.trim()&&!att.length)throw err('Empty message');
   const[m]=await q(`insert into chat_messages(conversation_id,sender,text,files) values($1,'bot',$2,$3) returning *`,[c.id,text,JSON.stringify(att)]);
-  await q('update conversations set last_bot_at=now() where id=$1',[c.id]);res.json({messageId:m.id})}));
+  await q('update conversations set last_bot_at=now() where id=$1',[c.id]);
+  try{await finishPromptLog(c.id,'grid',{status:'ok',response_length:text.length})}catch(e){console.error('prompt log finish',e.message)}
+  res.json({messageId:m.id})}));
  r.post('/bot/files',bot,raw,W(async(req,res)=>{const cid=+req.query.conversationId||null;const[c]=cid?await q('select * from conversations where id=$1',[cid]):[{}];if(cid&&!c)throw err('No such conversation',404);
   const f=await saveFile(req.body,req.query.name,{conversation_id:cid,client_id:c.client_id??null});res.json(fileOut(f,B))}));
  // Bot file reads/listing are scoped: pass conversationId; only that conversation's files and its account's library are reachable.
@@ -112,6 +114,7 @@ export function chatRoutes(r,{W}){
   if(!text.trim()&&!F.length)throw err('Write a message');
   const[m]=await q(`insert into chat_messages(conversation_id,sender,user_id,text,files) values($1,'user',$2,$3,$4) returning *`,[c.id,req.user.id,text,JSON.stringify(F.map(f=>({id:f.id})))]);
   await q('update conversations set last_user_at=now(),user_read_at=now(),title=case when title=$2 and $3<>\'\' then left($3,60) else title end where id=$1',[c.id,'New chat',text.trim().split('\n')[0]]);
+  try{await startPromptLog({agent:'grid',user:req.user,client:c.client_id?{id:c.client_id}:null,prompt:text,conversationId:c.id})}catch(e){console.error('prompt log start',e.message)}
   deliver(m.id).catch(e=>console.error('webhook',e.message));res.json((await msgsOut([m]))[0])}));
  r.post('/chat/c/:id/upload',raw,W(async(req,res)=>{const c=await getConv(req.user,req.params.id);if(c.user_id!==req.user.id)throw err('Not your chat',403);
   res.json(fileOut(await saveFile(req.body,req.query.name,{conversation_id:c.id,client_id:c.client_id,user_id:req.user.id})))}));

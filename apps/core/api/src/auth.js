@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import {createRemoteJWKSet, jwtVerify} from 'jose';
 import {db, now} from './db.js';
 import {checkPassword, getClient, clientPublic} from './clients.js';
+import {isAppAdmin, agentsPublic} from './staffcfg.js';
 
 const H = t => crypto.createHash('sha256').update(t).digest('hex');
 const b64u = b => b.toString('base64url');
@@ -61,12 +62,15 @@ const upsert = (email, p = {}) => {
 
 function meOut(u) {
   const client = u.client_id ? getClient(u.client_id) : null;
+  const admin = isAppAdmin(u);
   return {
     id: u.id,
     email: u.email,
     name: u.name,
     picture: u.picture,
     role: u.role,
+    isAdmin: admin,
+    adminAgents: admin ? agentsPublic() : [],
     client: client ? clientPublic(client, u) : null,
   };
 }

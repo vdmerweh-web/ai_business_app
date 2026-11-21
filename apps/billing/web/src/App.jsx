@@ -1,9 +1,9 @@
 import React,{useEffect,useState,useCallback,createContext,useContext} from 'react';import {Toaster,toast} from 'sonner';import {Command} from 'cmdk';import * as D from '@radix-ui/react-dialog';
 import {MotionConfig,motion,AnimatePresence} from 'motion/react';
-import {useInstall,InstallDialog,InstallHint,openCookies} from './install.jsx';import {ArrowLeftRight,Smartphone,Cookie,Check,Building2,Home,Users,FileText,RefreshCw,BookOpen,Download,Settings as Cog,Search,LogOut,MoreHorizontal,UserCog,User,MessagesSquare,FolderOpen,MessageCircle,Contact,Package,FolderKanban,Newspaper,ChevronsUpDown,Globe,Eye,Receipt,ChevronDown} from 'lucide-react';
+import {useInstall,InstallDialog,InstallHint,openCookies} from './install.jsx';import {ArrowLeftRight,Smartphone,Cookie,Check,Building2,Home,Users,FileText,RefreshCw,BookOpen,Download,Settings as Cog,Search,LogOut,MoreHorizontal,UserCog,User,MessagesSquare,FolderOpen,MessageCircle,Contact,Package,FolderKanban,Newspaper,ChevronsUpDown,Globe,Eye,Receipt,ChevronDown,Bot,BarChart3} from 'lucide-react';
 import {Data,useData,go,Me,can} from './store.js';import UsersPage from './pages/Users.jsx';import Account from './pages/Account.jsx';import {api,asset,analyse,R} from './lib.js';import {Button,Input,Field,cn} from './ui.jsx';
 import Dashboard from './pages/Dashboard.jsx';import Clients from './pages/Clients.jsx';import Client from './pages/Client.jsx';import Invoices from './pages/Invoices.jsx';
-import Run from './pages/Run.jsx';import Journal from './pages/Journal.jsx';import Export from './pages/Export.jsx';import Settings from './pages/Settings.jsx';import Chats,{ChatLauncher} from './pages/Chat.jsx';import Files from './pages/Files.jsx';import Crm from './pages/Crm.jsx';import Products from './pages/Products.jsx';import Projects from './pages/Projects.jsx';import Blog from './pages/Blog.jsx';import ChatPage from './pages/ChatPage.jsx';
+import Run from './pages/Run.jsx';import Journal from './pages/Journal.jsx';import Export from './pages/Export.jsx';import Settings from './pages/Settings.jsx';import Chats,{ChatLauncher} from './pages/Chat.jsx';import Files from './pages/Files.jsx';import Crm from './pages/Crm.jsx';import Products from './pages/Products.jsx';import Projects from './pages/Projects.jsx';import Blog from './pages/Blog.jsx';import ChatPage from './pages/ChatPage.jsx';import Bobby from './pages/Bobby.jsx';import ComingSoon from './pages/ComingSoon.jsx';import AgentChat from './pages/AgentChat.jsx';import Usage from './pages/Usage.jsx';
 export const NAV=[['home','Home',Home,'clients'],['chat','Chat',MessageCircle,null],['crm','CRM',Contact,'crm'],['products','Products',Package,'products'],['projects','Projects',FolderKanban,'projects'],['blog','Blog',Newspaper,'blog'],['clients','Clients',Users,'clients'],['invoices','Invoices',FileText,'invoices'],['run','Monthly run',RefreshCw,'run'],['journal','Journal',BookOpen,'journal'],['export','Export',Download,'export'],['users','Users',UserCog,'users'],['settings','Settings',Cog,'settings'],['files','Files',FolderOpen,null],['chats','Chats',MessagesSquare,'chatadmin'],['account','My account',User,null]];
 
 const BILLING=new Set(['clients','invoices','run','journal','export']);
@@ -81,24 +81,41 @@ export default function App(){const[me,setMe]=useState(undefined);useEffect(()=>
  return <MotionConfig reducedMotion="user"><Toaster position="top-right" richColors closeButton/>
   {me===undefined?<div className="min-h-screen grid place-items-center"><div className="skel w-40 h-6"/></div>:me?<Shell me={me} out={()=>setMe(null)}/>:<Gate onIn={setMe}/>}</MotionConfig>}
 // Loads all clients + their ledgers once; pages read from here. Read-only.
-function useStore(){const[s,setS]=useState({loading:true});
- const load=useCallback(async()=>{try{const cl=await api('/clients');const det=await Promise.all(cl.map(c=>api('/clients/'+c.id)));
+function useStore(enabled){const[s,setS]=useState({loading:!!enabled,clients:[],byId:{}});
+ const load=useCallback(async()=>{if(!enabled){setS({loading:false,clients:[],byId:{}});return}try{const cl=await api('/clients');const det=await Promise.all(cl.map(c=>api('/clients/'+c.id)));
   const byId={};cl.forEach((c,i)=>{const d=det[i];byId[c.id]={...c,...d,balance:c.balance,monthly:c.monthly,an:analyse(d.entries)}});
-  setS({loading:false,clients:cl.map(c=>byId[c.id]),byId,at:new Date()})}catch(e){setS({loading:false,error:e.message})}},[]);
+  setS({loading:false,clients:cl.map(c=>byId[c.id]),byId,at:new Date()})}catch(e){setS({loading:false,error:e.message,clients:[],byId:{}})}},[enabled]);
  useEffect(()=>{load()},[load]);return{...s,reload:load};}
-function Shell({me,out}){const[r,setR]=useState(parse());const portal=!!me.client_id;const crmOn=me.crm&&can(me,'crm');const prodOn=me.products&&(can(me,'products')||can(me,'orders'));const projOn=me.projects&&can(me,'projects');const blogOn=me.blog&&can(me,'blog');const nav=portal?[['home','My invoices',FileText,null],['chat','Chat',MessageCircle,null],...(crmOn?[['crm','CRM',Contact,null]]:[]),...(prodOn?[['products','Products',Package,null]]:[]),...(projOn?[['projects','Projects',FolderKanban,null]]:[]),...(blogOn?[['blog','Blog',Newspaper,null]]:[]),['files','Files',FolderOpen,null],['account','My account',User,null]]:NAV.filter(n=>(n[3]!=='crm'||me.crm)&&(n[3]!=='products'||(me.products&&(can(me,'products')||can(me,'orders'))))&&(n[3]!=='projects'||me.projects)&&(n[3]!=='blog'||me.blog)&&(!n[3]||n[3]==='products'||(n[3]==='chatadmin'?['owner','admin'].includes(me.role):can(me,n[3]))));const[k,setK]=useState(false);const store=useStore();
+function clientMenu(me){const name=me.agentName||'Bobby';return[['bobby',name,Bot,null],['web','Web',Globe,null],['crm','CRM',Contact,null],['scott','Scott',MessagesSquare,null]]}
+function adminMenu(me){const first=clientMenu(me);
+ const extras=(me.adminAgents||[]).filter(a=>!['bobby','web','crm','scott'].includes(a.id)).map(a=>[a.id,a.name,a.id==='grid'?MessageCircle:a.id==='admin'?UserCog:MessagesSquare,null]);
+ const rest=NAV.filter(n=>{
+  if(n[0]==='chat'&&(me.adminAgents||[]).some(a=>a.id==='grid'))return false;
+  if(n[3]==='crm')return !!me.crm;
+  if(n[3]==='products')return me.products&&(can(me,'products')||can(me,'orders'));
+  if(n[3]==='projects')return !!me.projects;
+  if(n[3]==='blog')return !!me.blog;
+  if(!n[3])return true;
+  if(n[3]==='chatadmin')return['owner','admin'].includes(me.role);
+  return can(me,n[3]);
+ });
+ return[...first,...extras,['usage','AI usage',BarChart3,null],...rest]}
+function Shell({me,out}){const[r,setR]=useState(parse());const admin=!!me.isAdmin;const crmOn=me.crm&&can(me,'crm');const prodOn=me.products&&(can(me,'products')||can(me,'orders'));const projOn=me.projects&&can(me,'projects');const blogOn=me.blog&&can(me,'blog');const nav=admin?adminMenu(me):clientMenu(me);const[k,setK]=useState(false);const store=useStore(admin);
  useEffect(()=>{const f=()=>{setR(parse());window.scrollTo(0,0)};addEventListener('hashchange',f);return()=>removeEventListener('hashchange',f)},[]);
  useEffect(()=>{const f=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setK(v=>!v)}};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)},[]);
  const logout=()=>api('/logout',{method:'POST'}).then(out);const inst=useInstall();
  const allowed=nav.some(n=>n[0]===r.page);const first=nav[0][0];
- const P=portal?(r.page==='account'?Account:r.page==='files'?Files:r.page==='chat'?ChatPage:r.page==='crm'&&crmOn?Crm:r.page==='products'&&prodOn?Products:r.page==='projects'&&projOn?Projects:r.page==='blog'&&blogOn?Blog:()=> <Client id={String(me.client_id)} portal/>):!allowed?(nav[0][0]==='home'?Dashboard:{clients:Clients,invoices:Invoices,run:Run,journal:Journal,export:Export,users:UsersPage,settings:Settings,account:Account}[first]):{home:Dashboard,clients:r.id?Client:Clients,invoices:Invoices,run:Run,journal:Journal,export:Export,users:UsersPage,settings:Settings,account:Account,chats:Chats,files:Files,chat:ChatPage,crm:Crm,products:Products,projects:Projects,blog:Blog}[r.page]||Dashboard;
- if(r.page==='chat'&&/standalone=1/.test(location.hash))return <Me.Provider value={me}><ChatPage standalone/></Me.Provider>;
+ React.useEffect(()=>{if(!allowed){location.hash='/'+(admin?'home':'bobby')}},[r.page,admin,allowed]);
+ const gridPage=()=>{const g=(me.adminAgents||[]).find(a=>a.id==='grid');return g&&g.connected?ChatPage:AgentChat};
+ const PAGES={bobby:Bobby,web:ComingSoon,crm:crmOn?Crm:ComingSoon,scott:admin?(((me.adminAgents||[]).find(a=>a.id==='scott')||{}).connected?ComingSoon:AgentChat):ComingSoon,grid:gridPage(),admin:AgentChat,usage:Usage,home:Dashboard,clients:r.id?Client:Clients,invoices:Invoices,run:Run,journal:Journal,export:Export,users:UsersPage,settings:Settings,account:Account,chats:Chats,files:Files,chat:ChatPage,products:Products,projects:Projects,blog:Blog};
+ const P=PAGES[r.page]||(admin?Dashboard:Bobby);
+ if((r.page==='chat'||r.page==='grid')&&/standalone=1/.test(location.hash))return <Me.Provider value={me}><ChatPage standalone/></Me.Provider>;
  return <Me.Provider value={me}><NavCtx.Provider value={nav}><Data.Provider value={store}><div className="min-h-screen md:flex">
   <aside className="hidden md:flex flex-col w-60 shrink-0 bg-navy text-silver px-3.5 py-5 sticky top-0 h-screen overflow-hidden">
    <img src={asset('logo-color.jpg')} alt="Planet Grid" className="rounded-xl w-full"/><div className="text-[11px] text-glow px-2 mt-2 mb-3">business growth platform</div>
    <div className="mx-1 mb-3"><CompanySwitcher me={me}/></div>
    {me.memberships&&!me.viewing&&<div className="mx-1 mb-3"><Switcher me={me} dark/></div>}
-   <button onClick={()=>setK(true)} className="flex items-center gap-2 mx-1 mb-4 px-3 h-9 rounded-lg bg-white/5 border border-white/10 text-silver/80 text-[13px] cursor-pointer hover:bg-white/10"><Search size={15}/>Search<kbd className="ml-auto text-[11px] opacity-60">Ctrl K</kbd></button>
+   {admin&&<button onClick={()=>setK(true)} className="flex items-center gap-2 mx-1 mb-4 px-3 h-9 rounded-lg bg-white/5 border border-white/10 text-silver/80 text-[13px] cursor-pointer hover:bg-white/10"><Search size={15}/>Search<kbd className="ml-auto text-[11px] opacity-60">Ctrl K</kbd></button>}
    <nav aria-label="Main" className="flex-1 min-h-0 overflow-y-auto space-y-0.5 pr-1">{(() => {const billing=nav.filter(n=>BILLING.has(n[0]));const top=nav.filter(n=>!BILLING.has(n[0]));return <>
     {top.map(([k,l,I])=>{const link=<NavLink key={k} k={k} l={l} I={I} on={r.page===k}/>;return k==='home'?<React.Fragment key={k}>{link}<BillingMenu items={billing} page={r.page}/></React.Fragment>:link})}
     {!top.some(n=>n[0]==='home')&&<BillingMenu items={billing} page={r.page}/>}</>})()}</nav>
@@ -106,16 +123,16 @@ function Shell({me,out}){const[r,setR]=useState(parse());const portal=!!me.clien
     <div className="px-2 pt-2 text-[12px]"><div className="truncate opacity-70">{me.email}</div><button type="button" onClick={logout} className="flex items-center gap-2 mt-2 hover:text-white cursor-pointer"><LogOut size={14}/>Log out</button></div></div>
   </aside>
   <header className="md:hidden sticky top-0 z-30 bg-navy text-white flex items-center justify-between px-4 h-14"><b className="tracking-wide">PLANET<span className="text-glow">-GRID</span></b><div className="w-48"><CompanySwitcher me={me}/></div>
-   <button aria-label="Search" onClick={()=>setK(true)} className="p-2 cursor-pointer"><Search size={20}/></button></header>
+   {admin&&<button aria-label="Search" onClick={()=>setK(true)} className="p-2 cursor-pointer"><Search size={20}/></button>}</header>
   <div className="flex-1 min-w-0"><ViewingBar me={me}/><main className="min-w-0 px-4 sm:px-8 py-6 md:py-8 pb-28 md:pb-10 max-w-[1240px]">
-   <AnimatePresence mode="wait"><motion.div key={r.page+(r.id||'')} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.2,ease:[.2,.8,.2,1]}}>{r.page!=='chat'&&<InstallHint/>}<P id={r.id}/></motion.div></AnimatePresence>
+   <AnimatePresence mode="wait"><motion.div key={r.page+(r.id||'')} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.2,ease:[.2,.8,.2,1]}}>{r.page!=='chat'&&r.page!=='grid'&&<InstallHint/>}<P id={r.id} section={{id:r.page,name:nav.find(n=>n[0]===r.page)?.[1]||r.page,connected:!!(me.adminAgents||[]).find(a=>a.id===r.page&&a.connected)}}/></motion.div></AnimatePresence>
   </main></div>
-  <MobileTabs page={r.page} logout={logout} inst={inst}/><InstallDialog open={inst.open} setOpen={inst.setOpen}/>{r.page!=='chat'&&<ChatLauncher/>}
-  <Palette open={k} setOpen={setK}/></div></Data.Provider></NavCtx.Provider></Me.Provider>}
+  <MobileTabs page={r.page} logout={logout} inst={inst}/><InstallDialog open={inst.open} setOpen={inst.setOpen}/>{admin&&r.page!=='chat'&&r.page!=='grid'&&<ChatLauncher/>}
+  {admin&&<Palette open={k} setOpen={setK}/>}</div></Data.Provider></NavCtx.Provider></Me.Provider>}
 function MobileTabs({page,logout,inst}){const NAVS=React.useContext(NavCtx);const billing=NAVS.filter(n=>BILLING.has(n[0]));const others=NAVS.filter(n=>!BILLING.has(n[0]));const[more,setMore]=useState(false);const main=others.slice(0,4);const rest=others.slice(4);const moreRef=React.useRef(null);const after=f=>{setMore(false);setTimeout(()=>{moreRef.current&&moreRef.current.focus();f()},300)};
  return <><nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-navy text-silver flex justify-around pt-2 pb-[max(10px,env(safe-area-inset-bottom))]">
-  {main.map(([k,l,I])=><a key={k} href={'#/'+k} className={cn('flex flex-col items-center gap-1 text-[11px] w-16 py-1',page===k&&'text-glow')}><I size={20}/>{l==='Monthly run'?'Run':l}</a>)}
-  <button ref={moreRef} type="button" aria-label="More pages and settings" onClick={()=>setMore(true)} className={cn('flex flex-col items-center gap-1 text-[11px] w-16 py-1 cursor-pointer',(rest.some(n=>n[0]===page)||billing.some(n=>n[0]===page))&&'text-glow')}><MoreHorizontal size={20}/>More</button></nav>
+  {main.map(([k,l,I])=><a key={k} href={'#/'+k} className={cn('flex flex-col items-center gap-1 text-[11px] w-16 py-1',page===k&&'text-glow')}><I size={20}/>{l==='Monthly run'?'Run':l==='AI usage'?'Usage':l}</a>)}
+  {(rest.length>0||billing.length>0)&&<button ref={moreRef} type="button" aria-label="More pages and settings" onClick={()=>setMore(true)} className={cn('flex flex-col items-center gap-1 text-[11px] w-16 py-1 cursor-pointer',(rest.some(n=>n[0]===page)||billing.some(n=>n[0]===page))&&'text-glow')}><MoreHorizontal size={20}/>More</button>}</nav>
   <D.Root open={more} onOpenChange={setMore}><D.Portal><D.Overlay className="overlay fixed inset-0 bg-navy/40 z-40"/><D.Content className="fixed bottom-0 inset-x-0 z-50 bg-white rounded-t-2xl p-4 pb-8 max-h-[80vh] overflow-y-auto"><D.Title className="font-semibold mb-2 px-2">More</D.Title><D.Description className="sr-only">More pages and settings</D.Description>
    {billing.length>0&&<div className="mb-2"><div className="px-3 pt-1 pb-1 text-xs font-semibold text-muted">Billing</div>{billing.map(([k,l,I])=><a key={k} href={'#/'+k} onClick={()=>setMore(false)} className="flex items-center gap-3 px-3 h-12 rounded-lg hover:bg-slate-50"><I size={18}/>{l}</a>)}</div>}
    {rest.map(([k,l,I])=><a key={k} href={'#/'+k} onClick={()=>setMore(false)} className="flex items-center gap-3 px-3 h-12 rounded-lg hover:bg-slate-50"><I size={18}/>{l}</a>)}

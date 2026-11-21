@@ -28,6 +28,19 @@ services:
       VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
       VAPID_SUBJECT: "mailto:hannes@planet-grid.com"
       MAIL_FROM: "${MAIL_FROM:-Hannes - Planet Grid <hannes@planet-grid.com>}"
+      XAI_API_KEY: "${XAI_API_KEY:-}"
+      XAI_MODEL: "${XAI_MODEL:-grok-4.3}"
+      XAI_ZAR_PER_USD: "${XAI_ZAR_PER_USD:-17.50}"
+      ADMIN_EMAILS: "${ADMIN_EMAILS:-}"
+      ADMIN_AGENTS: "${ADMIN_AGENTS:-}"
+      MAIN_CLIENT_REF: "${MAIN_CLIENT_REF:-}"
+      SCOTT_WEBHOOK_URL: "${SCOTT_WEBHOOK_URL:-}"
+      SERVER_NAME: "${SERVER_NAME:-app.planet-grid.com}"
+      UPLOAD_DIR: /data/uploads
+      BACKUP_DIR: /backups
+    volumes:
+      - uploads:/data/uploads
+      - ./backups:/backups
     depends_on: {db: {condition: service_healthy}}
     ports: ["127.0.0.1:3000:3000"]
   web:
@@ -35,4 +48,4 @@ services:
     restart: unless-stopped
     depends_on: [api]
     ports: ["127.0.0.1:3001:80"]
-volumes: {pgdata: {}}
+volumes: {pgdata: {}, uploads: {}}

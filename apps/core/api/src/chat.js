@@ -2,6 +2,7 @@
 //  out: POST CG_WEBHOOK_URL (X-CG-Webhook-Secret: CG_WEBHOOK_SECRET, Authorization: CG_WEBHOOK_AUTH) with retry worker.
 //  in:  bearer CG_BOT_TOKEN on /bot/messages, /bot/conversations/:id, /bot/files.
 import express from 'express';import crypto from 'crypto';import fs from 'fs';import path from 'path';import {db,now} from './db.js';
+import {startPromptLog, finishPromptLog} from './promptLog.js';
 const DIR=process.env.UPLOAD_DIR||'/data/uploads';const APP=process.env.APP_URL||'https://app.codegreene.com';const MB=1024*1024;
 const has=(b,s,o=0)=>b.slice(o,o+s.length).equals(Buffer.from(s,'latin1'));
 const KINDS={png:['image/png',b=>has(b,'\x89PNG')],jpg:['image/jpeg',b=>b[0]===0xff&&b[1]===0xd8],jpeg:['image/jpeg',b=>b[0]===0xff&&b[1]===0xd8],
@@ -53,7 +54,10 @@ export function botRoutes(r,{W}){const bot=botAuth;
    else if(/^https:\/\/[^\s"'<>]+$/.test(u))att.push({url:u});else throw err('imageUrls must be https URLs or file URLs');}
   if(!text.trim()&&!att.length)throw err('Empty message');
   const m=db.prepare(`insert into chat_messages(conversation_id,sender,text,files) values(?,'bot',?,?) returning id`).get(c.id,text,JSON.stringify(att));
-  db.prepare('update conversations set last_bot_at=? where id=?').run(now(),c.id);res.json({messageId:m.id})}));
+  db.prepare('update conversations set last_bot_at=? where id=?').run(now(),c.id);
+  const agent=c.section==='server-admin'?'admin':(c.section||'admin');
+  try{finishPromptLog(c.id,agent,{status:'ok',response_length:text.length})}catch(e){console.error('prompt log finish',e.message)}
+  res.json({messageId:m.id})}));
  r.post('/bot/files',bot,raw,W(async(req,res)=>{const c=db.prepare('select * from conversations where id=?').get(+req.query.conversationId);if(!c)throw err('Pass a valid conversationId',404);
   res.json(fileOut(saveFile(req.body,req.query.name,c.id,null),B))}));
  r.get('/bot/files/:id',bot,W(async(req,res)=>{const f=/^[0-9a-f]{32}$/.test(req.params.id)?db.prepare('select * from files where id=?').get(req.params.id):null;
@@ -77,6 +81,8 @@ export function chatRoutes(r,{W}){
   if(!text.trim()&&!F.length)throw err('Write a message');
   const m=db.prepare(`insert into chat_messages(conversation_id,sender,user_id,text,files) values(?,'user',?,?,?) returning *`).get(c.id,req.user.id,text,JSON.stringify(F.map(f=>({id:f.id}))));
   db.prepare(`update conversations set last_user_at=?,user_read_at=?,title=case when title='New chat' and ?<>'' then substr(?,1,60) else title end where id=?`).run(now(),now(),text.trim(),text.trim().split('\n')[0],c.id);
+  const agent=c.section==='server-admin'?'admin':(c.section||'admin');
+  try{startPromptLog({agent,user:req.user,client:req.user.client_id?{id:req.user.client_id}:null,prompt:text,conversationId:c.id})}catch(e){console.error('prompt log start',e.message)}
   deliver(m.id).catch(e=>console.error('webhook',e.message));res.json(msgsOut([m])[0])}));
  r.post('/chat/c/:id/upload',raw,W(async(req,res)=>{const c=getConv(req.user,req.params.id);res.json(fileOut(saveFile(req.body,req.query.name,c.id,req.user.id)))}));
  r.get('/files/:id',W(async(req,res)=>{const f=/^[0-9a-f]{32}$/.test(req.params.id)?db.prepare('select f.* from files f join conversations c on c.id=f.conversation_id where f.id=? and c.user_id=?').get(req.params.id,req.user.id):null;

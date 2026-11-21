@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import {db} from './db.js';
 import {FEATURES, FEATURE_IDS, CLIENT_DEFAULTS, STAFF_DEFAULTS} from './features.js';
+import {creditsFromLog, monthKey as logMonth} from './promptLog.js';
+import {isAppAdmin} from './staffcfg.js';
 
 const BACKUP_DIR = process.env.BACKUP_DIR || '/backups';
 const DEMO_EMAIL = 'amy@sunrisebakery.test';
@@ -39,26 +41,35 @@ export function getClient(id) {
   return db.prepare('select * from clients where id=?').get(id) || null;
 }
 
-export function featuresFor(clientId) {
+export function featuresFor(clientId, user) {
   const rows = db.prepare('select feature_id, enabled from client_features where client_id=?').all(clientId);
   const map = new Map(rows.map(r => [r.feature_id, !!r.enabled]));
-  return FEATURES.filter(f => map.get(f.id)).map(f => ({
+  const staff = user ? isAppAdmin(user) : false;
+  return FEATURES.filter(f => map.get(f.id) && (!f.staffOnly || staff)).map(f => ({
     id: f.id,
     name: f.name,
     description: f.description,
     comingSoon: !!f.comingSoon,
     bot: f.bot || (f.id === 'bobby' ? null : undefined),
+    staffOnly: !!f.staffOnly,
   }));
 }
 
-export function hasFeature(clientId, featureId) {
+export function hasFeature(clientId, featureId, user) {
   const row = db.prepare('select enabled from client_features where client_id=? and feature_id=?').get(clientId, featureId);
-  return !!(row && row.enabled);
+  if (!(row && row.enabled)) return false;
+  const f = FEATURES.find(x => x.id === featureId);
+  if (f?.staffOnly && !isAppAdmin(user)) return false;
+  return true;
 }
 
 export function requireFeature(featureId) {
   return (req, res, next) => {
-    if (!req.user?.client_id || !hasFeature(req.user.client_id, featureId)) {
+    const f = FEATURES.find(x => x.id === featureId);
+    if (f?.staffOnly && !isAppAdmin(req.user)) {
+      return res.status(403).json({error: 'This part is only for the site admin'});
+    }
+    if (!req.user?.client_id || !hasFeature(req.user.client_id, featureId, req.user)) {
       return res.status(403).json({error: 'This part is not on for your account'});
     }
     next();
@@ -92,14 +103,7 @@ export function upsertClient({slug, name, domain, site_url, agent_name = 'Bobby'
 
 export function creditsFor(client) {
   const month = monthKey();
-  const row = db.prepare(`
-    select coalesce(sum(cost_zar),0) used_zar,
-           coalesce(sum(input_tokens),0) input_tokens,
-           coalesce(sum(cached_input_tokens),0) cached_input_tokens,
-           coalesce(sum(output_tokens),0) output_tokens,
-           count(*) calls
-    from credit_usage where client_id=? and month=?
-  `).get(client.id, month);
+  const row = creditsFromLog(client.id, month) || {};
   const allowance = +client.credit_allowance_zar || 100;
   const used = +row.used_zar || 0;
   return {

@@ -23,3 +23,9 @@ html,body{background:var(--color-paper);color:var(--color-ink);font-size:14px;-w
 .pg-prose .selectedCell{background:#1E8BFF14}.pg-prose iframe{width:100%;aspect-ratio:16/9;height:auto;border-radius:10px;border:0}
 .pg-prose p.is-editor-empty:first-child::before{content:attr(data-placeholder);color:#94A3B8;float:left;height:0;pointer-events:none}
 .ProseMirror{outline:none;min-height:320px}.ProseMirror:focus-visible{outline:none}
+
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .45s var(--ease-out-soft) both}
+@keyframes pulse-dot{0%,100%{opacity:.3}50%{opacity:1}}
+.dot{animation:pulse-dot 1.2s infinite}
+@media (prefers-reduced-motion:reduce){.rise{animation:none}.dot{animation:none}}
