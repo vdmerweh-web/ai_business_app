@@ -6,6 +6,7 @@ import path from 'path';
 import {db, now} from './db.js';
 import {getClient, featuresFor, creditsFor, monthKey, clientPublic} from './clients.js';
 import {withPromptLog} from './promptLog.js';
+import {withLoggedWrite} from './changeLog.js';
 
 const DIR = process.env.UPLOAD_DIR || '/data/uploads';
 const MB = 1024 * 1024;
@@ -174,9 +175,15 @@ function runTool(client, name, args) {
   if (name === 'rename_agent') {
     const nameNew = validAgentName(args?.new_name);
     if (!nameNew) return {error: 'That name is not allowed. Use 2 to 40 letters, numbers, spaces or hyphens.'};
-    db.prepare('update clients set agent_name=? where id=?').run(nameNew, client.id);
-    client.agent_name = nameNew;
-    return {ok: true, agentName: nameNew};
+    const updated = withLoggedWrite({
+      entity: 'clients', recordId: client.id, clientId: client.id, user, via: 'rename_agent',
+      apply: () => {
+        db.prepare('update clients set agent_name=? where id=?').run(nameNew, client.id);
+        return db.prepare('select * from clients where id=?').get(client.id);
+      },
+    });
+    client.agent_name = updated.agent_name;
+    return {ok: true, agentName: updated.agent_name};
   }
   return {error: 'Unknown tool'};
 }
@@ -350,7 +357,13 @@ export function bobbyRoutes(r, {W}) {
     if (!client) throw err('No client account is linked to this sign-in', 403);
     const name = validAgentName(req.body?.agentName ?? req.body?.agent_name);
     if (!name) throw err('Please pick a name of 2 to 40 letters, numbers, spaces or hyphens.');
-    db.prepare('update clients set agent_name=? where id=?').run(name, client.id);
+    withLoggedWrite({
+      entity: 'clients', recordId: client.id, clientId: client.id, user: req.user, via: 'ui',
+      apply: () => {
+        db.prepare('update clients set agent_name=? where id=?').run(name, client.id);
+        return db.prepare('select * from clients where id=?').get(client.id);
+      },
+    });
     res.json({agentName: name, client: clientPublic(getClient(client.id), req.user)});
   }));
 

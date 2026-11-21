@@ -7,6 +7,7 @@ import path from 'path';
 import {spawn} from 'child_process';
 import {q} from './db.js';
 import {isAppAdmin} from './staffcfg.js';
+import {withLoggedWrite} from './changeLog.js';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const err = (m, s = 400) => Object.assign(new Error(m), {status: s});
@@ -171,29 +172,48 @@ export async function applyBillingEmailChange(user, actionId, {confirmed}) {
   const newEmail = validEmail(p.newEmail);
   if (!newEmail) throw err('The new email on this request is not valid.');
   const backup = await backupBeforeEmailWrite();
-  const [updated] = await q(`
-    update clients set email=$2
-    where id=$1 and lower(coalesce(email,'')) is not distinct from lower(coalesce($3,''))
-    returning id, ref, name, email
-  `, [row.client_id, newEmail, p.oldEmail || '']);
-  if (!updated) {
-    await q(`update bobby_action_requests set status='cancelled' where id=$1 and status='pending'`, [actionId]);
-    throw err('The billing email was changed already, or the client was not found. Nothing was saved. Please check and ask me again.');
+  let updated;
+  try {
+    updated = await withLoggedWrite({
+      entity: 'clients',
+      recordId: row.client_id,
+      clientId: row.client_id,
+      user,
+      via: 'apply_billing_email_change',
+      apply: async ({q}) => {
+        const [next] = await q(`
+          update clients set email=$2
+          where id=$1 and lower(coalesce(email,'')) is not distinct from lower(coalesce($3,''))
+          returning *
+        `, [row.client_id, newEmail, p.oldEmail || '']);
+        if (!next) {
+          const e = err('The billing email was changed already, or the client was not found. Nothing was saved. Please check and ask me again.');
+          e.code = 'stale';
+          throw e;
+        }
+        await q(`update bobby_action_requests set status='applied', applied_at=now() where id=$1`, [actionId]);
+        await q(`insert into audit_log(user_id, action, detail) values($1,$2,$3)`, [
+          user.id,
+          'billing_email_change',
+          {
+            client_id: next.id,
+            ref: next.ref,
+            name: next.name,
+            old_email: p.oldEmail || null,
+            new_email: newEmail,
+            action_id: actionId,
+            backup,
+          },
+        ]);
+        return next;
+      },
+    });
+  } catch (e) {
+    if (e.code === 'stale') {
+      await q(`update bobby_action_requests set status='cancelled' where id=$1 and status='pending'`, [actionId]);
+    }
+    throw e;
   }
-  await q(`update bobby_action_requests set status='applied', applied_at=now() where id=$1`, [actionId]);
-  await q(`insert into audit_log(user_id, action, detail) values($1,$2,$3)`, [
-    user.id,
-    'billing_email_change',
-    {
-      client_id: updated.id,
-      ref: updated.ref,
-      name: updated.name,
-      old_email: p.oldEmail || null,
-      new_email: newEmail,
-      action_id: actionId,
-      backup,
-    },
-  ]);
   return {
     ok: true,
     clientName: updated.name,

@@ -2,9 +2,16 @@
 // Same column names on both apps. All AI calls must go through withPromptLog
 // so a call cannot skip the log. The client credit meter reads cost_zar from here.
 import os from 'os';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {q} from './db.js';
 import {isAppAdmin} from './staffcfg.js';
 import {xaiBalanceSummary} from './xaiBalance.js';
+
+const promptContext = new AsyncLocalStorage();
+export function currentPromptLogId() {
+  const s = promptContext.getStore();
+  return s?.promptLogId ?? null;
+}
 
 export function monthKey(d = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit'}).formatToParts(d);
@@ -91,8 +98,6 @@ export async function creditsFromLog(clientId, month = monthKey()) {
 
 export async function withPromptLog({agent, user, client, prompt, conversationId, triggerType = 'chat', triggerName = null, taskId = null}, fn) {
   const t0 = Date.now();
-  const createdAt = new Date();
-  const load = readLoad();
   let modelMs = 0;
   const markModel = async p => {
     const s = Date.now();
@@ -100,32 +105,36 @@ export async function withPromptLog({agent, user, client, prompt, conversationId
   };
   const meta = {model: null, input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, cost_zar: 0, response_length: 0};
   const setMeta = m => Object.assign(meta, m);
-  const base = {
-    created_at: createdAt,
-    client_id: client?.id || null,
-    user_id: user?.id || null,
-    user_email: user?.email || null,
-    ai_agent: String(agent || 'unknown').slice(0, 40),
-    prompt_text: String(prompt || '').slice(0, 20000),
-    server_name: serverName(),
-    conversation_id: conversationId == null ? null : String(conversationId),
-    trigger_type: ['chat', 'event', 'cron'].includes(triggerType) ? triggerType : 'chat',
-    trigger_name: triggerName ? String(triggerName).slice(0, 120) : null,
-    task_id: taskId == null ? null : String(taskId).slice(0, 80),
-    ...load,
-  };
-  try {
-    const result = await fn({markModel, setMeta});
-    await insertLog({...base, ...meta, status: 'ok', model_ms: modelMs, duration_ms: Date.now() - t0, finished_at: new Date()});
-    return result;
-  } catch (e) {
-    await insertLog({
-      ...base, ...meta, status: 'error',
-      error_message: String(e.message || e).slice(0, 500),
-      model_ms: modelMs, duration_ms: Date.now() - t0, finished_at: new Date(),
-    });
-    throw e;
-  }
+  const started = await startPromptLog({agent, user, client, prompt, conversationId, triggerType, triggerName, taskId});
+  return promptContext.run({promptLogId: started.id, agent: String(agent || 'unknown').slice(0, 40)}, async () => {
+    try {
+      const result = await fn({markModel, setMeta, promptLogId: started.id});
+      await finishPromptLogById(started.id, {...meta, status: 'ok', model_ms: modelMs, duration_ms: Date.now() - t0});
+      return result;
+    } catch (e) {
+      await finishPromptLogById(started.id, {
+        ...meta, status: 'error',
+        error_message: String(e.message || e).slice(0, 500),
+        model_ms: modelMs, duration_ms: Date.now() - t0,
+      });
+      throw e;
+    }
+  });
+}
+
+async function finishPromptLogById(id, row) {
+  await q(`
+    update ai_prompt_log set
+      finished_at=now(),
+      duration_ms=$2, model_ms=$3, response_length=$4,
+      model=$5, input_tokens=$6, cached_input_tokens=$7, output_tokens=$8, cost_zar=$9,
+      status=$10, error_message=$11
+    where id=$1
+  `, [
+    id, row.duration_ms || 0, row.model_ms || 0, row.response_length || 0,
+    row.model || null, row.input_tokens || 0, row.cached_input_tokens || 0, row.output_tokens || 0, row.cost_zar || 0,
+    row.status, row.error_message || null,
+  ]);
 }
 
 async function insertLog(row) {

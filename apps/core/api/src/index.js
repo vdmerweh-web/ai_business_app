@@ -13,9 +13,11 @@ import {bobbyRoutes, apiKeySet} from './bobby.js';
 import {isAppAdmin, agentsPublic, CLIENT_MENU_IDS} from './staffcfg.js';
 import {promptLogInit, usageRoutes} from './promptLog.js';
 import {xaiBalanceInit} from './xaiBalance.js';
+import {changeLogInit, changeRoutes} from './changeLog.js';
 
 seedTenants();
 promptLogInit();
+changeLogInit();
 xaiBalanceInit();
 
 const app = express();
@@ -78,6 +80,7 @@ chatRoutes(r, {W});
 r.use('/bobby', requireFeature('bobby'));
 bobbyRoutes(r, {W});
 usageRoutes(r, {W});
+changeRoutes(r, {W});
 r.use((req, res) => res.status(404).json({error: 'Not found'}));
 app.use('/api', r);
 app.use('/', r);

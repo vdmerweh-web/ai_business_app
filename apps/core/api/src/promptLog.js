@@ -2,9 +2,16 @@
 // Same column names on both apps. All AI calls must go through withPromptLog
 // so a call cannot skip the log. The client credit meter reads cost_zar from here.
 import os from 'os';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {db} from './db.js';
 import {isAppAdmin} from './staffcfg.js';
 import {xaiBalanceSummary} from './xaiBalance.js';
+
+const promptContext = new AsyncLocalStorage();
+export function currentPromptLogId() {
+  const s = promptContext.getStore();
+  return s?.promptLogId ?? null;
+}
 
 export function monthKey(d = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit'}).formatToParts(d);
@@ -93,8 +100,6 @@ export function creditsFromLog(clientId, month = monthKey()) {
 
 export async function withPromptLog({agent, user, client, prompt, conversationId, triggerType = 'chat', triggerName = null, taskId = null}, fn) {
   const t0 = Date.now();
-  const createdAt = iso();
-  const load = readLoad();
   let modelMs = 0;
   const markModel = async p => {
     const s = Date.now();
@@ -102,32 +107,35 @@ export async function withPromptLog({agent, user, client, prompt, conversationId
   };
   const meta = {model: null, input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, cost_zar: 0, response_length: 0};
   const setMeta = m => Object.assign(meta, m);
-  const base = {
-    created_at: createdAt,
-    client_id: client?.id || null,
-    user_id: user?.id || null,
-    user_email: user?.email || null,
-    ai_agent: String(agent || 'unknown').slice(0, 40),
-    prompt_text: String(prompt || '').slice(0, 20000),
-    server_name: serverName(),
-    conversation_id: conversationId == null ? null : String(conversationId),
-    trigger_type: ['chat', 'event', 'cron'].includes(triggerType) ? triggerType : 'chat',
-    trigger_name: triggerName ? String(triggerName).slice(0, 120) : null,
-    task_id: taskId == null ? null : String(taskId).slice(0, 80),
-    ...load,
-  };
-  try {
-    const result = await fn({markModel, setMeta});
-    insertLog({...base, ...meta, status: 'ok', model_ms: modelMs, duration_ms: Date.now() - t0, finished_at: iso()});
-    return result;
-  } catch (e) {
-    insertLog({
-      ...base, ...meta, status: 'error',
-      error_message: String(e.message || e).slice(0, 500),
-      model_ms: modelMs, duration_ms: Date.now() - t0, finished_at: iso(),
-    });
-    throw e;
-  }
+  const started = startPromptLog({agent, user, client, prompt, conversationId, triggerType, triggerName, taskId});
+  return promptContext.run({promptLogId: started.id, agent: String(agent || 'unknown').slice(0, 40)}, async () => {
+    try {
+      const result = await fn({markModel, setMeta, promptLogId: started.id});
+      finishPromptLogById(started.id, {...meta, status: 'ok', model_ms: modelMs, duration_ms: Date.now() - t0});
+      return result;
+    } catch (e) {
+      finishPromptLogById(started.id, {
+        ...meta, status: 'error',
+        error_message: String(e.message || e).slice(0, 500),
+        model_ms: modelMs, duration_ms: Date.now() - t0,
+      });
+      throw e;
+    }
+  });
+}
+
+function finishPromptLogById(id, row) {
+  db.prepare(`
+    update ai_prompt_log set
+      finished_at=?, duration_ms=?, model_ms=?, response_length=?,
+      model=?, input_tokens=?, cached_input_tokens=?, output_tokens=?, cost_zar=?,
+      status=?, error_message=?
+    where id=?
+  `).run(
+    iso(), row.duration_ms || 0, row.model_ms || 0, row.response_length || 0,
+    row.model || null, row.input_tokens || 0, row.cached_input_tokens || 0, row.output_tokens || 0, row.cost_zar || 0,
+    row.status, row.error_message || null, id,
+  );
 }
 
 function insertLog(row) {
@@ -156,12 +164,14 @@ export function startPromptLog({agent, user, client, prompt, conversationId, tri
   const info = db.prepare(`
     insert into ai_prompt_log(
       created_at, client_id, user_id, user_email, ai_agent, prompt_text,
-      status, server_name, load_1, load_5, load_15, conversation_id
-    ) values (?,?,?,?,?,?, 'pending',?,?,?,?,?)
+      status, server_name, load_1, load_5, load_15, conversation_id,
+      trigger_type, trigger_name, task_id
+    ) values (?,?,?,?,?,?, 'pending',?,?,?,?,?,?,?,?)
   `).run(
     iso(), client?.id || null, user?.id || null, user?.email || null, String(agent || 'unknown').slice(0, 40),
     String(prompt || '').slice(0, 20000), serverName(), load.load_1, load.load_5, load.load_15,
     conversationId == null ? null : String(conversationId),
+    triggerType, triggerName, taskId,
   );
   return {id: info.lastInsertRowid};
 }

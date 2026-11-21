@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import {q} from './db.js';
+import {withLoggedWrite} from './changeLog.js';
 import {isAppAdmin} from './staffcfg.js';
 import {
   searchClients, getClientBilling, proposeBillingEmailChange,
@@ -354,9 +355,15 @@ async function runTool(client, user, name, args) {
   if (name === 'rename_agent') {
     const nameNew = validAgentName(args?.new_name);
     if (!nameNew) return {error: 'That name is not allowed. Use 2 to 40 letters, numbers, spaces or hyphens.'};
-    await q('update clients set agent_name=$1 where id=$2', [nameNew, client.id]);
-    client.agent_name = nameNew;
-    return {ok: true, agentName: nameNew};
+    const updated = await withLoggedWrite({
+      entity: 'clients', recordId: client.id, clientId: client.id, user, via: 'rename_agent',
+      apply: async ({q}) => {
+        const [row] = await q('update clients set agent_name=$1 where id=$2 returning *', [nameNew, client.id]);
+        return row;
+      },
+    });
+    client.agent_name = updated.agent_name;
+    return {ok: true, agentName: updated.agent_name};
   }
   if (name === 'search_clients') {
     if (!isAppAdmin(user)) return {error: 'Only a site admin can look up other clients.'};
@@ -571,7 +578,13 @@ export function bobbyRoutes(r, {W}) {
     const client = await resolveClient(req);
     const name = validAgentName(req.body?.agentName ?? req.body?.agent_name);
     if (!name) throw err('Please pick a name of 2 to 40 letters, numbers, spaces or hyphens.');
-    await q('update clients set agent_name=$1 where id=$2', [name, client.id]);
+    await withLoggedWrite({
+      entity: 'clients', recordId: client.id, clientId: client.id, user: req.user, via: 'ui',
+      apply: async ({q}) => {
+        const [row] = await q('update clients set agent_name=$1 where id=$2 returning *', [name, client.id]);
+        return row;
+      },
+    });
     res.json({agentName: name, client: await clientPublic(await getClient(client.id), req.user)});
   }));
 

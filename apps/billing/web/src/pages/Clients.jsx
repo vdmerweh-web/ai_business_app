@@ -1,5 +1,6 @@
 import React,{useState} from 'react';import {Plus,Users,Search} from 'lucide-react';import {toast} from 'sonner';
 import {useData,go,useCan} from '../store.js';import {api,clientStatus} from '../lib.js';import {Card,Table,Badge,Money,Button,PageHead,Input,Field,Sheet,SkelRows,ErrorBox,Empty} from '../ui.jsx';
+import ChangeLog from './ChangeLog.jsx';
 export function ClientForm({open,setOpen,initial,onSaved}){const canU=useCan()('users','edit');const[n,setN]=useState(initial||{});const[busy,setBusy]=useState(false);const edit=!!initial?.id;
  const F=(k,l,p={})=><Field label={l} hint={p.hint}><Input value={n[k]||''} onChange={e=>setN({...n,[k]:e.target.value})} {...p}/></Field>;
  const save=e=>{e.preventDefault();setBusy(true);api(edit?'/clients/'+n.id:'/clients',{method:edit?'PUT':'POST',body:n}).then(r=>{toast.success(edit?'Client updated':'Client added');setOpen(false);onSaved?.(r)}).catch(x=>toast.error(x.message)).finally(()=>setBusy(false))};
@@ -22,4 +23,4 @@ export default function Clients(){const{loading,error,clients=[],reload}=useData
    {h:'Monthly',right:1,hide:1,r:c=>c.monthly?<Money v={c.monthly}/>:<span className="text-muted">—</span>},
    {h:'Balance',right:1,r:c=><Money v={c.balance} className={c.an?.overdue>0?'text-over font-medium':''}/>}]}/>}
   {!loading&&!error&&l.length>0&&<div className="flex justify-between px-4 py-3 border-t border-line bg-slate-50/60 rounded-b-xl font-medium"><span>Total owed</span><span className="num">{'R '+tot.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}</span></div>}</Card>
-  <ClientForm open={open} setOpen={setOpen} onSaved={r=>{reload();r?.id&&go('clients',r.id)}}/></>}
+  <ClientForm open={open} setOpen={setOpen} onSaved={r=>{reload();r?.id&&go('clients',r.id)}}/><ChangeLog title="Recent client and agent changes"/></>}

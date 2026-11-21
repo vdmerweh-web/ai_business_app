@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {api} from '../lib.js';
 import Hint from '../Hint.jsx';
+import ChangeLog from './ChangeLog.jsx';
 
 const ms = n => !n ? '—' : n < 1000 ? `${Math.round(n)} ms` : `${(n/1000).toFixed(1)} s`;
 const r = n => `R ${Number(n || 0).toFixed(2)}`;
@@ -83,6 +84,7 @@ export default function Usage() {
           <Table title="Per day" rows={sum.byDay} name={x => x.day}/>
         </>
       )}
+          <ChangeLog title="Recent client and agent changes"/>
       <h2 className="mt-10 text-xl font-semibold">Recent prompts</h2>
       <div className="mt-3 overflow-x-auto rounded-2xl bg-white ring-1 ring-slate-200">
         <table className="min-w-full text-sm">
