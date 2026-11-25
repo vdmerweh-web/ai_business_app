@@ -7,6 +7,6 @@ export function headers(req,res,next){res.removeHeader('X-Powered-By');res.set({
  if(!res.get('Content-Security-Policy'))res.set('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'; base-uri 'none'");next();}
 // Browsers send Origin on cross-site POST/PUT/DELETE; reject foreign origins on cookie-auth routes. Bot routes use a bearer token instead.
 export function csrf(req,res,next){if(['GET','HEAD','OPTIONS'].includes(req.method))return next();
- if(/^\/(api\/)?bot\//.test(req.path))return next();
+ if(/^\/(api\/)?(bot|hooks|public)\//.test(req.path))return next();
  const o=req.get('origin');if(!o){const rf=req.get('referer');if(!rf||[...ALLOWED].some(a=>rf.startsWith(a+'/')))return next();return res.status(403).json({error:'Blocked: wrong origin'});}
  if(ALLOWED.has(o))return next();res.status(403).json({error:'Blocked: wrong origin'});}

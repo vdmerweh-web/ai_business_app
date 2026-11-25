@@ -1,10 +1,12 @@
-# Codegreene main app (app.codegreene.com). Two containers, SQLite on a volume, both bound to 127.0.0.1 only.
+# Codegreene main app (app.codegreene.com). Central data in SQLite; per-site live/test databases in Postgres.
+# Only api and web publish ports, both on 127.0.0.1. db, pgbackup and builder are internal only.
 name: codegreene-app
 services:
   api:
     build: {context: ./api}
     restart: unless-stopped
     env_file: .env
+    depends_on: [db]
     environment:
       PORT: "3600"
       DB_FILE: /data/app.db
@@ -14,11 +16,15 @@ services:
       SERVER_NAME: "${SERVER_NAME:-app.codegreene.com}"
       XAI_MANAGEMENT_KEY: "${XAI_MANAGEMENT_KEY:-}"
       XAI_TEAM_ID: "${XAI_TEAM_ID:-43eb7c23-1ec6-46f2-8596-5e8aa3b2ae5c}"
+      SITES_DIR: /sites
+      PG_HOST: db
+      BUILDER_URL: http://builder:3700
     volumes:
       - data:/data
       # Same source as the old PHP page (/bot_admin): the Admin bot's report, mounted read-only.
       - ${INVENTORY_DIR:-/var/lib/bot_admin}:/report:ro
       - ./backups:/backups
+      - ./sites-data:/sites
     group_add: ["${INVENTORY_GID:-33}"]   # www-data can read /var/lib/bot_admin (root:www-data 0640)
     mem_limit: 160m
     memswap_limit: 160m
@@ -40,4 +46,53 @@ services:
     security_opt: ["no-new-privileges:true"]
     ports: ["127.0.0.1:3601:80"]
     logging: {driver: json-file, options: {max-size: "5m", max-file: "3"}}
-volumes: {data: {}}
+  # Per-site databases (each site copy has its own database and its own login).
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cg_admin
+      POSTGRES_PASSWORD: "${PG_ADMIN_PASSWORD:?PG_ADMIN_PASSWORD must be set in .env}"
+      POSTGRES_DB: postgres
+    command: ["postgres", "-c", "shared_buffers=24MB", "-c", "max_connections=60", "-c", "work_mem=2MB", "-c", "maintenance_work_mem=16MB", "-c", "effective_cache_size=96MB", "-c", "password_encryption=scram-sha-256"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+    pids_limit: 200
+    security_opt: ["no-new-privileges:true"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U cg_admin -d postgres"], interval: 10s, timeout: 5s, retries: 6}
+    logging: {driver: json-file, options: {max-size: "5m", max-file: "3"}}
+  # Daily dump of all site databases into ./backups/pg (also covered by alpha's daily server backup).
+  pgbackup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on: [db]
+    environment:
+      PGHOST: db
+      PGUSER: cg_admin
+      PGPASSWORD: "${PG_ADMIN_PASSWORD:?PG_ADMIN_PASSWORD must be set in .env}"
+    entrypoint: ["sh", "-c", "sleep 120; while true; do f=/backups/pg-$$(date +%Y%m%d-%H%M).sql.gz; pg_dumpall | gzip > $$f.tmp && mv $$f.tmp $$f; chmod 600 $$f; sleep 86400; done"]
+    volumes: ["./backups/pg:/backups"]
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.25
+    security_opt: ["no-new-privileges:true"]
+    logging: {driver: json-file, options: {max-size: "1m", max-file: "2"}}
+  # Builds client sites with Astro. No published port.
+  builder:
+    build: {context: ./builder}
+    restart: unless-stopped
+    environment:
+      SITES_DIR: /sites
+      BUILDER_TOKEN: "${BUILDER_TOKEN:-}"
+    volumes: ["./sites-data:/sites"]
+    tmpfs: [/tmp]
+    mem_limit: 640m
+    memswap_limit: 640m
+    cpus: 1.0
+    pids_limit: 200
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: {driver: json-file, options: {max-size: "5m", max-file: "3"}}
+volumes: {data: {}, pgdata: {}}

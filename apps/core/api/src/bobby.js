@@ -7,6 +7,7 @@ import {db, now} from './db.js';
 import {getClient, featuresFor, creditsFor, monthKey, clientPublic} from './clients.js';
 import {withPromptLog} from './promptLog.js';
 import {withLoggedWrite} from './changeLog.js';
+import {SITE_TOOLS, SITE_TOOL_NAMES, runSiteTool, SITE_PROMPT} from './bobbytools.js';
 
 const DIR = process.env.UPLOAD_DIR || '/data/uploads';
 const MB = 1024 * 1024;
@@ -134,6 +135,7 @@ function systemPrompt(client, user) {
     `You will always ask the client before you delete anything, spend money, or send an email. You cannot do those things yet. If they ask, explain that and help them plan the words or steps.`,
     `If they want to rename you, you may use the rename_agent tool, but only when they clearly asked for a new name. Confirm the new name in your reply.`,
     `Useful next steps to offer: look at the site, send a logo and pictures (they can attach a file in this chat; a Resources page for uploads is also coming soon), and later set up the contact form (CRM, Customer Relationship Management) and Scott, the helper on the public site.`,
+    SITE_PROMPT,
     `You work on the R100 of Grok credits included in their monthly plan. If credits run out, say so kindly and tell them to ask Planet Grid about a top-up. Do not promise free extra credits.`,
   ].filter(Boolean).join('\n');
 }
@@ -145,6 +147,7 @@ const TOOLS = [
   {type: 'function', function: {name: 'list_people', description: 'List the people (names and emails) who can sign in to this client account. Never list any other client.', parameters: {type: 'object', properties: {}, additionalProperties: false}}},
   {type: 'function', function: {name: 'list_files', description: 'List files this client has already sent (logos, pictures, PDFs).', parameters: {type: 'object', properties: {}, additionalProperties: false}}},
   {type: 'function', function: {name: 'rename_agent', description: 'Rename the in-app helper for this client. Only use when the client clearly asked to change the name.', parameters: {type: 'object', properties: {new_name: {type: 'string', description: 'The new name, 2 to 40 letters, numbers, spaces or hyphens.'}}, required: ['new_name'], additionalProperties: false}}},
+  ...SITE_TOOLS,
 ];
 
 function validAgentName(raw) {
@@ -154,7 +157,7 @@ function validAgentName(raw) {
   return name;
 }
 
-function runTool(client, name, args) {
+function runTool(client, name, args, user) {
   if (name === 'get_account') {
     return {name: client.name, domain: client.domain, siteUrl: client.site_url, agentName: client.agent_name, slug: client.slug};
   }
@@ -247,8 +250,8 @@ function historyForModel(convId, clientId, limit = 30) {
   return out;
 }
 
-async function replyTo(client, user, conv, userText) {
-  return withPromptLog({agent: 'bobby', user, client, prompt: userText, conversationId: conv.id}, async ({markModel, setMeta}) => {
+async function replyTo(client, user, conv, userText, opts = {}) {
+  return withPromptLog({agent: 'bobby', user, client, prompt: userText, conversationId: conv.id, triggerType: opts.triggerType || 'chat', triggerName: opts.triggerName || null, taskId: opts.taskId || null}, async ({markModel, setMeta}) => {
   const credits = creditsFor(client);
   if (credits.exhausted) {
     const text = `Our AI (Artificial Intelligence) credits for this month are used up. The plan includes R${credits.allowanceZar.toFixed(0)} a month. Please ask Planet Grid about a top-up if you need more.`;
@@ -298,7 +301,8 @@ async function replyTo(client, user, conv, userText) {
     for (const call of toolCalls) {
       let args = {};
       try { args = JSON.parse(call.function?.arguments || '{}'); } catch { args = {}; }
-      const result = runTool(client, call.function?.name, args);
+      const tname = call.function?.name;
+      const result = SITE_TOOL_NAMES.has(tname) ? await runSiteTool(client, user, tname, args) : runTool(client, tname, args, user);
       const payload = JSON.stringify(result);
       db.prepare("insert into bobby_messages(conversation_id,client_id,role,content,tool_name,tool_call_id) values(?,?,'tool',?,?,?)")
         .run(conv.id, client.id, payload, call.function?.name || '', call.id);
@@ -456,3 +460,19 @@ export function bobbyRoutes(r, {W}) {
   }));
 }
 
+
+// Scheduler: run Bobby on a task with no person in the chat. The reply is saved in a
+// "Scheduled job" conversation the client can read. Credits count as usual.
+export async function runBobbyTask(clientId, prompt, {jobId, title} = {}) {
+  const client = getClient(clientId);
+  if (!client) throw new Error('No such client');
+  if (!apiKeySet()) throw new Error('Bobby is not connected to Grok yet (no API key on this server).');
+  const before = db.prepare('select coalesce(sum(cost_zar),0) z from credit_usage where client_id=?').get(clientId).z;
+  const conv = db.prepare("insert into bobby_conversations(client_id,title,last_at) values(?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now')) returning *").get(clientId, ('Scheduled: ' + (title || prompt)).slice(0, 60));
+  const text = `[Scheduled job #${jobId}] ${String(prompt).slice(0, 2000)}`;
+  db.prepare("insert into bobby_messages(conversation_id,client_id,role,content) values(?,?,'user',?)").run(conv.id, clientId, text);
+  const user = {id: null, email: 'scheduler@' + (process.env.SERVER_NAME || 'app'), name: 'Scheduler', client_id: clientId};
+  const out = await replyTo(client, user, conv, text, {triggerType: 'cron', triggerName: title || 'scheduled job', taskId: jobId ? 'job-' + jobId : null});
+  const after = db.prepare('select coalesce(sum(cost_zar),0) z from credit_usage where client_id=?').get(clientId).z;
+  return {message: String(out?.content || '').slice(0, 300), costZar: Math.max(0, after - before)};
+}

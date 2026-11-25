@@ -1,0 +1,1 @@
+{"name":"codegreene-site-builder","private":true,"type":"module","main":"server.js","dependencies":{"astro":"^5.1.0"}}

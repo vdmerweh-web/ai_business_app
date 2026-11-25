@@ -1,8 +1,11 @@
 # Local test only: the box's dockerd runs without iptables, so bridge networking/DNS don't work there.
 # Host networking instead; nginx listens on 3601 and proxies to 127.0.0.1:3600. Not used on the server.
 services:
-  api: {network_mode: host, ports: !reset []}
+  api: {network_mode: host, ports: !reset [], environment: {PG_HOST: 127.0.0.1, BUILDER_URL: 'http://127.0.0.1:3700'}}
   web:
     network_mode: host
     ports: !reset []
-    command: ["sh","-c","sed -i 's/listen 80;/listen 127.0.0.1:3601;/; s#http://api:3600#http://127.0.0.1:3600#g' /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+    command: ["sh","-c","sed -i 's/listen 80/listen 127.0.0.1:3601/; s#http://api:3600#http://127.0.0.1:3600#g' /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+  db: {network_mode: host}
+  pgbackup: {network_mode: host, environment: {PGHOST: 127.0.0.1}}
+  builder: {network_mode: host}

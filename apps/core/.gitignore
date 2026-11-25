@@ -10,3 +10,5 @@ node_modules/
 web/dist/
 .DS_Store
 .demo-pass
+sites-data/
+builder/node_modules/

@@ -1,0 +1,778 @@
+{
+ "checked_at": "2026-11-25",
+ "method": "read-only: crt.sh certificate logs and dns.google lookups; merged with the Grid subdomain check of 25 Nov 2026 (plan: Sites, DNS, webhooks, email and scheduler)",
+ "names": {
+  "7x": {
+   "points_to": [],
+   "seen": [
+    "7x.codegreene.com"
+   ]
+  },
+  "abuse": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "account": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "accounts": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "admin": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "alpha": {
+   "points_to": [
+    "alpha.codegreene.com -> 45.33.56.119"
+   ],
+   "seen": [
+    "alpha.codegreene.com"
+   ]
+  },
+  "api": {
+   "points_to": [
+    "api.planet-grid.com -> 102.209.118.114"
+   ],
+   "seen": [
+    "api.planet-grid.com"
+   ]
+  },
+  "api42": {
+   "points_to": [],
+   "seen": [
+    "api42.codegreene.com"
+   ]
+  },
+  "app": {
+   "points_to": [
+    "app.codegreene.com -> 45.33.56.119",
+    "app.planet-grid.com -> 102.209.118.114"
+   ],
+   "seen": [
+    "app.codegreene.com",
+    "app.planet-grid.com"
+   ]
+  },
+  "assets": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "atlasp2": {
+   "points_to": [],
+   "seen": [
+    "atlasp2.codegreene.com"
+   ]
+  },
+  "auth": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "autoconfig": {
+   "points_to": [
+    "autoconfig.planet-grid.com -> mailconfig.konsoleh.co.za. 196.40.99.93"
+   ],
+   "seen": [
+    "autoconfig.planet-grid.com"
+   ]
+  },
+  "autodiscover": {
+   "points_to": [],
+   "seen": [
+    "generic",
+    "autodiscover.planet-grid.com"
+   ]
+  },
+  "backup": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "backups": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ben": {
+   "points_to": [],
+   "seen": [
+    "ben.codegreene.com"
+   ]
+  },
+  "beta": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "bh": {
+   "points_to": [
+    "bh.codegreene.com -> 45.33.56.119"
+   ],
+   "seen": [
+    "bh.codegreene.com"
+   ]
+  },
+  "billing": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "blog": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "blue42": {
+   "points_to": [],
+   "seen": [
+    "blue42.codegreene.com"
+   ]
+  },
+  "bobby": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "book": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "booking": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "bookings": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "bot": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "bots": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "calendar": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "cdn": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "chem": {
+   "points_to": [],
+   "seen": [
+    "generic",
+    "chem.codegreene.com"
+   ]
+  },
+  "clone1": {
+   "points_to": [],
+   "seen": [
+    "clone1.codegreene.com"
+   ]
+  },
+  "clone2": {
+   "points_to": [],
+   "seen": [
+    "clone2.codegreene.com"
+   ]
+  },
+  "cpanel": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "crm": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "dashboard": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "db": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "demo": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "dev": {
+   "points_to": [
+    "dev.codegreene.com -> 173.255.241.161",
+    "dev.codegreene.com -> 173.255.241.161 (other server)"
+   ],
+   "seen": [
+    "dev.codegreene.com",
+    "www.dev.codegreene.com"
+   ]
+  },
+  "dev2": {
+   "points_to": [],
+   "seen": [
+    "dev2.codegreene.com"
+   ]
+  },
+  "dns": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "docs": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "email": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "embed": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "favred": {
+   "points_to": [],
+   "seen": [
+    "generic",
+    "favred.codegreene.com"
+   ]
+  },
+  "files": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ftp": {
+   "points_to": [
+    "ftp.planet-grid.com -> www.planet-grid.com. 102.209.118.114"
+   ],
+   "seen": [
+    "ftp.planet-grid.com"
+   ]
+  },
+  "gear": {
+   "points_to": [],
+   "seen": [
+    "gear.codegreene.com"
+   ]
+  },
+  "genesis": {
+   "points_to": [],
+   "seen": [
+    "genesis.codegreene.com"
+   ]
+  },
+  "git": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "grid": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "help": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "hermes": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "hooks": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "hostmaster": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "icebear": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "images": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "imap": {
+   "points_to": [
+    "imap.planet-grid.com -> mail.planet-grid.com. 197.221.14.85"
+   ],
+   "seen": [
+    "imap.planet-grid.com"
+   ]
+  },
+  "img": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "internal": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "invoice": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "invoices": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "live": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "live2": {
+   "points_to": [
+    "live2.codegreene.com -> 173.255.223.154"
+   ],
+   "seen": [
+    "live2.codegreene.com"
+   ]
+  },
+  "login": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "m": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "mail": {
+   "points_to": [
+    "mail.planet-grid.com -> 197.221.14.85"
+   ],
+   "seen": [
+    "mail.planet-grid.com"
+   ]
+  },
+  "mailer": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "media": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "mediavax": {
+   "points_to": [],
+   "seen": [
+    "mediavax.codegreene.com"
+   ]
+  },
+  "mobile": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "mx": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "news": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "newsletter": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ns": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ns1": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ns2": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ns3": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "path": {
+   "points_to": [
+    "path.codegreene.com -> 45.33.56.119"
+   ],
+   "seen": [
+    "path.codegreene.com"
+   ]
+  },
+  "pay": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "payments": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "plan": {
+   "points_to": [
+    "plan.planet-grid.com -> 102.209.118.114"
+   ],
+   "seen": [
+    "plan.planet-grid.com"
+   ]
+  },
+  "pop": {
+   "points_to": [
+    "pop.planet-grid.com -> mail.planet-grid.com. 197.221.14.85"
+   ],
+   "seen": [
+    "pop.planet-grid.com"
+   ]
+  },
+  "pop3": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "portal": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "postmaster": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "preview": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "pwa": {
+   "points_to": [],
+   "seen": [
+    "pwa.codegreene.com"
+   ]
+  },
+  "react": {
+   "points_to": [
+    "react.codegreene.com -> 45.33.56.119"
+   ],
+   "seen": [
+    "react.codegreene.com"
+   ]
+  },
+  "s": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "salestasknew": {
+   "points_to": [
+    "salestasknew.codegreene.com -> 45.33.56.119"
+   ],
+   "seen": [
+    "salestasknew.codegreene.com"
+   ]
+  },
+  "sandbox": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "scott": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "secure": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "server": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "servers": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "sftp": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "shop": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "signin": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "signup": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "site": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "sites": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "smtp": {
+   "points_to": [
+    "smtp.planet-grid.com -> mail.planet-grid.com. 197.221.14.85"
+   ],
+   "seen": [
+    "smtp.planet-grid.com"
+   ]
+  },
+  "stage": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "staging": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "static": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "status": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "store": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "support": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "test": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "tim": {
+   "points_to": [
+    "tim.codegreene.com -> 172.237.149.163"
+   ],
+   "seen": [
+    "tim.codegreene.com"
+   ]
+  },
+  "timdb": {
+   "points_to": [],
+   "seen": [
+    "timdb.codegreene.com"
+   ]
+  },
+  "timdemo": {
+   "points_to": [],
+   "seen": [
+    "timdemo.codegreene.com"
+   ]
+  },
+  "vpn": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "webhook": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "webhooks": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "webmail": {
+   "points_to": [],
+   "seen": [
+    "generic",
+    "webmail.planet-grid.com"
+   ]
+  },
+  "whm": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  },
+  "ws42": {
+   "points_to": [],
+   "seen": [
+    "ws42.codegreene.com"
+   ]
+  },
+  "www": {
+   "points_to": [
+    "www.codegreene.com -> 45.33.56.119",
+    "www.planet-grid.com -> 102.209.118.114"
+   ],
+   "seen": [
+    "www.codegreene.com",
+    "www.planet-grid.com"
+   ]
+  },
+  "xo": {
+   "points_to": [],
+   "seen": [
+    "generic"
+   ]
+  }
+ }
+}

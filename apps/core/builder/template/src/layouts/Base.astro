@@ -1,0 +1,24 @@
+---
+// Shared page shell for every client site. All values arrive already escaped/validated by gen.js.
+const {lang = 'en', headHtml = '', css = '', bodyHtml = '', navHtml = '', footerHtml = '', name = ''} = Astro.props;
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Fragment set:html={headHtml} />
+    <style is:inline set:html={css}></style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap bar">
+        <a class="brand" href="./">{name}</a>
+        <nav aria-label="Main"><Fragment set:html={navHtml} /></nav>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"><Fragment set:html={bodyHtml} /></main>
+    <footer class="site-footer"><div class="wrap"><Fragment set:html={footerHtml} /></div></footer>
+  </body>
+</html>

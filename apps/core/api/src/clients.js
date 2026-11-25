@@ -165,7 +165,8 @@ export function seedTenants() {
     site_url: 'https://app.codegreene.com',
   });
   setFeatures(staff.id, STAFF_DEFAULTS);
-  db.prepare("update users set client_id=?, role='admin' where client_id is null or email like '%@codegreene.com'").run(staff.id);
+  // Client-view test logins (role 'client', e.g. hannes+test@codegreene.com) must stay clients.
+  db.prepare("update users set client_id=?, role='admin' where client_id is null or (email like '%@codegreene.com' and email not like '%+test@codegreene.com' and role != 'client')").run(staff.id);
 
   const demo = upsertClient({
     slug: DEMO_SLUG,
