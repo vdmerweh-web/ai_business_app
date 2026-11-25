@@ -75,3 +75,35 @@ Rollback: `cd /srv/apps/codegreene-app && sudo docker compose down` and `sudo a2
 
 ## Local test (box)
 `.env` with `APP_URL=http://localhost:3601` and `DEV_MOCK_LOGIN=1`, then `docker compose -f docker-compose.yml -f docker-compose.boxtest.yml up -d --build` (the override uses host networking because the box's dockerd runs without iptables). Afterwards: `docker compose down -v`.
+
+## Sites, builder, SEO, modules, scheduler (25 Nov 2026)
+
+Containers: `api`, `web` (nginx), `db` (Postgres 16 for site databases), `builder` (Astro 5), `pgbackup` (daily `pg_dumpall` into `backups/pg`).
+
+- **Sites**: each site has a `test` and a `live` copy. Each copy has its own Postgres database
+  (`site_<slug>_<copy>`) and its own login (`<db>_user`, random password, stored encrypted with
+  `SITE_SECRET_KEY`). The test login cannot open the live database (checked by `GET /api/sites/:id/isolation`).
+  "Reset test" reads live with the live login, cleans names/emails/phones/messages, and writes with the test login.
+- **Builder**: pages are kept as `sites-data/<slug>/<copy>/spec.json` and built to static HTML by the builder.
+  Edits always go to test. Publishing copies test to live and needs the client's OK (plus an admin OK if
+  client blocks changed). Old versions are kept in `history/`.
+- **Module tags**: `/embed/pg.js` (v1.0.0) adds `<pg-contact-form>`, `<pg-funnel>` and `<pg-booking>`.
+  The words inside a tag show if the app is down.
+- **SEO**: every page gets title, description, canonical, robots, Open Graph, Twitter tags and JSON-LD
+  (LocalBusiness/Organization, Article, breadcrumbs). Live copies get sitemap.xml and an indexable robots.txt;
+  test copies are always noindex. Images need alt text and width/height (max 1000 px, hero 2000 px).
+  301 redirects and the Google Analytics / Search Console fields live in the SEO tab. `GET /api/sites/:id/seo` scores pages.
+- **Modules**: switched on or off per client (`/api/modules`). Each has a version; a new major version waits until the client accepts it.
+  Bobby cannot change module code; he logs change requests for an admin.
+- **CRM**: contacts, submissions and up to 30 custom fields per site copy. Contact form, funnel and bookings feed it.
+- **Bookings**: built-in calendar (open hours, slot length, time zone) or a Calendly link. Google/Outlook linking is stubbed (501).
+- **Scheduler**: in-process queue, `SCHED_WORKERS` (default 3) at once, jitter for jobs at the same time,
+  per-client caps (runs/day, active jobs, AI rand/day), retries (1, 5, 15 min, 1 h) then a flag to Grid. Run log in `sched_runs`.
+- **Bot webhooks**: `POST /api/hooks/{admin,grid}/message`, `GET /api/hooks/{bot}/inbox`. HMAC-SHA256 over
+  `timestamp.nonce.METHOD.path.body` in `X-CG-Signature: sha256=…` with `X-CG-Timestamp` and `X-CG-Nonce` (5 minute window, nonces kept). All logged in `webhook_log`.
+- **Hostnames**: `<slug>.codegreene.com` serves the live copy once DNS and the Apache vhost exist. Reserved names: `api/src/reserved-names.json`.
+- **Storage**: per plan (`plans` table), measured every 6 hours, warning at 80%.
+- **Mail**: transactional mail is stubbed into `mail_outbox` until a mail service is chosen.
+- **Test client accounts**: `hannes+test@`, `josh+test@`, `mark+test@codegreene.com` (password logins, client view).
+  Passwords are written once to `backups/TEST_CLIENT_LOGINS.txt` (mode 600) on the server.
+- **Client blocks** in git: `client-blocks/`, synced with `deploy/sync-client-blocks.sh`.
