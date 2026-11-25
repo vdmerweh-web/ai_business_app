@@ -1,20 +1,26 @@
 import React, {useEffect, useState} from 'react';
-import {LogOut, Server, Loader2, Bot, Globe, Images, Contact, MessagesSquare, Menu, X, BarChart3} from 'lucide-react';
+import {LogOut, Server, Loader2, Bot, Globe, Images, Contact, MessagesSquare, Menu, X, BarChart3, Network} from 'lucide-react';
 import {api, post, useRoute} from './lib.js';
-import Login from './Login.jsx';
+import Login, {nextUrl} from './Login.jsx';
 import ServerAdmin from './sections/ServerAdmin.jsx';
 import Bobby from './sections/Bobby.jsx';
 import ComingSoon from './sections/ComingSoon.jsx';
 import AgentChat from './sections/AgentChat.jsx';
 import Usage from './sections/Usage.jsx';
 import Chat from './Chat.jsx';
+import Sites from './sections/Sites.jsx';
+import Crm from './sections/Crm.jsx';
+import Platform from './sections/Platform.jsx';
 
-const ICONS = {bobby: Bot, web: Globe, resources: Images, crm: Contact, scott: MessagesSquare, 'server-admin': Server, grid: Bot, admin: Server, usage: BarChart3};
+const ICONS = {bobby: Bot, web: Globe, resources: Images, crm: Contact, scott: MessagesSquare, 'server-admin': Server, grid: Bot, admin: Server, usage: BarChart3, platform: Network};
 function PageFor(section) {
   if (!section) return null;
   if (section.id === 'bobby') return Bobby;
   if (section.id === 'server-admin') return ServerAdmin;
   if (section.id === 'usage') return Usage;
+  if (section.id === 'web') return Sites;
+  if (section.id === 'crm') return Crm;
+  if (section.id === 'platform') return Platform;
   if (section.id === 'admin' && section.connected) return function AdminChat() { return <Chat section="server-admin" bot="Admin"/> };
   if (section.id === 'grid' && section.connected) return function GridChat() { return <Chat section="grid" bot="Grid"/> };
   if (section.id === 'scott' && section.connected) return function ScottChat() { return <Chat section="scott" bot="Scott"/> };
@@ -23,12 +29,13 @@ function PageFor(section) {
 }
 const PAGES = {
   'bobby': {Page: Bobby},
-  'web': {Page: ComingSoon},
+  'web': {Page: Sites},
   'resources': {Page: ComingSoon},
-  'crm': {Page: ComingSoon},
+  'crm': {Page: Crm},
   'scott': {Page: ComingSoon},
   'server-admin': {Page: ServerAdmin},
   'usage': {Page: Usage},
+  'platform': {Page: Platform},
   'grid': {Page: AgentChat},
   'admin': {Page: AgentChat},
 };
@@ -43,6 +50,9 @@ export default function App() {
   useEffect(() => { if (me) api('/sections').then(setSections).catch(() => {}); }, [me]);
   useEffect(() => {
     if (!me || !sections.length) return;
+    if (path === '/login' && nextUrl() !== '/') { location.href = nextUrl(); return; }
+    let saved = null; try { saved = sessionStorage.getItem('cg_next'); sessionStorage.removeItem('cg_next'); } catch {}
+    if (saved && saved !== '/' && /^\/(?!\/)[^\\]*$/.test(saved)) { location.href = saved; return; }
     if (path === '/' || path === '/login') go('/' + sections[0].id);
   }, [me, path, sections]);
   useEffect(() => { setMenuOpen(false); }, [path]);
